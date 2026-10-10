@@ -17,7 +17,9 @@ const I18N = {
   en: {
     'menu.file': 'File', 'menu.edit': 'Edit', 'menu.insert': 'Insert', 'menu.view': 'View', 'menu.settings': 'Settings', 'menu.help': 'Help',
     'menu.language': 'Language', 'menu.theme': 'Theme',
-    'a.newDoc': 'New', 'a.openFile': 'Open…', 'a.save': 'Save', 'a.saveAs': 'Save As…', 'a.exportHtml': 'Export as HTML…',
+    'a.newDoc': 'New', 'a.openFile': 'Open…', 'a.save': 'Save', 'a.saveAs': 'Save As…', 'a.reloadFile': 'Refresh from Disk',
+    'toast.reloaded': '“{name}” was changed outside and reloaded.', 'toast.changedOutside': '“{name}” was changed outside — press F5 to load it (your unsaved changes would be replaced).',
+    'confirm.reload': '“{name}” has unsaved changes. Replace them with the version from disk?', 'toast.upToDate': '“{name}” is up to date.', 'toast.notOnDisk': '“{name}” isn’t saved as a file yet.', 'a.exportHtml': 'Export as HTML…',
     'a.print': 'Print / Save as PDF…', 'a.closeTab': 'Close Tab', 'a.undo': 'Undo', 'a.redo': 'Redo', 'a.find': 'Find & Replace',
     'a.findNext': 'Find Next', 'a.selectAll': 'Select All', 'a.h1': 'Heading 1', 'a.h2': 'Heading 2', 'a.h3': 'Heading 3',
     'a.para': 'Paragraph', 'a.heading': 'Heading — cycles H1 → H2 → H3 → text', 'a.bold': 'Bold', 'a.italic': 'Italic',
@@ -88,7 +90,9 @@ const I18N = {
   de: {
     'menu.file': 'Datei', 'menu.edit': 'Bearbeiten', 'menu.insert': 'Einfügen', 'menu.view': 'Ansicht', 'menu.settings': 'Einstellungen', 'menu.help': 'Hilfe',
     'menu.language': 'Sprache', 'menu.theme': 'Design',
-    'a.newDoc': 'Neu', 'a.openFile': 'Öffnen…', 'a.save': 'Speichern', 'a.saveAs': 'Speichern unter…', 'a.exportHtml': 'Als HTML exportieren…',
+    'a.newDoc': 'Neu', 'a.openFile': 'Öffnen…', 'a.save': 'Speichern', 'a.saveAs': 'Speichern unter…', 'a.reloadFile': 'Von Festplatte aktualisieren',
+    'toast.reloaded': '„{name}“ wurde außerhalb geändert und neu geladen.', 'toast.changedOutside': '„{name}“ wurde außerhalb geändert — F5 lädt die neue Fassung (deine ungespeicherten Änderungen würden ersetzt).',
+    'confirm.reload': '„{name}“ hat ungespeicherte Änderungen. Durch die Fassung von der Festplatte ersetzen?', 'toast.upToDate': '„{name}“ ist aktuell.', 'toast.notOnDisk': '„{name}“ ist noch nicht als Datei gespeichert.', 'a.exportHtml': 'Als HTML exportieren…',
     'a.print': 'Drucken / Als PDF speichern…', 'a.closeTab': 'Tab schließen', 'a.undo': 'Rückgängig', 'a.redo': 'Wiederholen',
     'a.find': 'Suchen & Ersetzen', 'a.findNext': 'Weitersuchen', 'a.selectAll': 'Alles auswählen', 'a.h1': 'Überschrift 1',
     'a.h2': 'Überschrift 2', 'a.h3': 'Überschrift 3', 'a.para': 'Absatz', 'a.heading': 'Überschrift – wechselt H1 → H2 → H3 → Text',
@@ -367,6 +371,55 @@ function loadActive() {
   ed.focus({preventScroll: true});
 }
 function activate(i) { if (i === active) return; storeCurrent(); active = i; loadActive(); }
+
+/* ================= Files changed outside (e.g. by another program or Claude) ================= */
+/* Every open file's modification time is checked every 2 s and when the window gets focus. Unchanged documents reload
+   by themselves (cursor and scroll position stay); documents with unsaved edits only get a hint — F5 loads the file then. */
+const onDisk = d => invoke && typeof d.handle === 'string';
+async function stampOf(d) { if (onDisk(d)) { try { [d.stamp] = await invoke('file_stamps', {paths: [d.handle]}); } catch (e) {} } }
+function replaceContent(d, content) {
+  d.content = content; d.disk = content;
+  if (d === cur()) {
+    const sel = [ed.selectionStart, ed.selectionEnd], top = ed.scrollTop, canvasTop = canvas.scrollTop;
+    ed.value = content;
+    ed.setSelectionRange(Math.min(sel[0], content.length), Math.min(sel[1], content.length));
+    ed.scrollTop = top; render(); canvas.scrollTop = canvasTop; updateCursor();
+  }
+  d.dirty = false; renderTabs(); updateTitle(); saveSession();
+}
+let checking = false;
+async function checkDisk() {
+  if (checking || !invoke) return;
+  const list = docs.filter(onDisk); if (!list.length) return;
+  checking = true;
+  try {
+    const stamps = await invoke('file_stamps', {paths: list.map(d => d.handle)});
+    for (let i = 0; i < list.length; i++) {
+      const d = list[i], s = stamps[i];
+      if (!s || s === d.stamp) continue;
+      const first = d.stamp == null;
+      d.stamp = s;
+      let f; try { f = await invoke('read_file', {path: d.handle}); } catch (e) { continue; }
+      if (f.content === d.content) { d.disk = f.content; continue; }
+      if (d === cur()) storeCurrent();
+      if (!d.dirty) { replaceContent(d, f.content); if (!first) toast(t('toast.reloaded', {name: d.name})); }
+      else if (f.content !== d.disk) { d.disk = f.content; toast(t('toast.changedOutside', {name: d.name})); }
+    }
+  } finally { checking = false; }
+}
+/* F5: load the file from disk now (asks first if there are unsaved edits). */
+async function reloadFile() {
+  const d = cur(); if (!d) return;
+  if (!onDisk(d)) return toast(t('toast.notOnDisk', {name: d.name}));
+  storeCurrent();
+  let f; try { f = await invoke('read_file', {path: d.handle}); } catch (e) { return toast(t('toast.missing', {name: d.name})); }
+  if (f.content === d.content) { d.dirty = false; renderTabs(); updateTitle(); return toast(t('toast.upToDate', {name: d.name})); }
+  if (d.dirty && !await ask(t('confirm.reload', {name: d.name}))) return;
+  replaceContent(d, f.content); stampOf(d);
+  toast(t('toast.reloaded', {name: d.name}));
+}
+window.addEventListener('focus', checkDisk);
+setInterval(() => { if (document.visibilityState === 'visible') checkDisk(); }, 2000);
 function openDoc(name, content, handle = null) {
   if (typeof handle === 'string') {
     const open = docs.findIndex(x => x.handle === handle);
@@ -380,7 +433,7 @@ function openDoc(name, content, handle = null) {
   return d;
 }
 // Native files arrive from Rust as {path, name, content}.
-const openNative = list => list.forEach(f => { addRecent(f.path, f.name); openDoc(f.name, f.content, f.path); });
+const openNative = list => list.forEach(f => { addRecent(f.path, f.name); const d = openDoc(f.name, f.content, f.path); stampOf(d); });
 async function ask(message) {
   return invoke
     ? invoke('confirm', {title: t('confirm.title'), message, okLabel: t('confirm.ok'), cancelLabel: t('confirm.cancel')})
@@ -713,7 +766,7 @@ async function save(as) {
     try {
       const r = await invoke('save_file', {path: as ? null : d.handle, suggestedName: d.name, content: d.content});
       if (!r) return;
-      d.handle = r.path; d.name = r.name; addRecent(r.path, r.name);
+      d.handle = r.path; d.name = r.name; addRecent(r.path, r.name); d.disk = d.content; stampOf(d);
       markDirty(false); renderTabs(); toast(t('toast.saved', {name: d.name}));
     } catch (e) { toast(t('toast.saveFail', {e})); }
     return;
@@ -950,7 +1003,7 @@ function toast(msg) { const el = $('#toast'); el.textContent = msg; el.classList
 
 const A = {
   newDoc: () => openDoc(null, ''),
-  openFile, save: () => save(false), saveAs: () => save(true), exportHtml,
+  openFile, save: () => save(false), reloadFile, saveAs: () => save(true), exportHtml,
   print: () => {
     render();
     setTimeout(() => invoke ? invoke('print_page').catch(e => toast(t('toast.printFail', {e}))) : window.print(), 60);
@@ -1041,7 +1094,7 @@ const A = {
 
 // Menu items: [action, shortcut, checked(), nativeKey]; strings are separators, '#key' is a section label.
 const MENUS = [
-  ['file', [['newDoc', 'Alt+N'], ['openFile', 'Ctrl+O'], '-', ['save', 'Ctrl+S'], ['saveAs', 'Ctrl+Shift+S'], '-',
+  ['file', [['newDoc', 'Alt+N'], ['openFile', 'Ctrl+O'], '-', ['save', 'Ctrl+S'], ['saveAs', 'Ctrl+Shift+S'], ['reloadFile', 'F5'], '-',
     ['exportHtml', 'Ctrl+E'], ['print', 'Ctrl+P'], '-', ['closeTab', 'Alt+W']]],
   ['edit', [['undo', 'Ctrl+Z', null, true], ['redo', 'Ctrl+Y', null, true], '-', ['find', 'Ctrl+F'], ['findNext', 'F3'], '-',
     ['selectAll', 'Ctrl+A', null, true]]],

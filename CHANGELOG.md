@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.3.5 — 2026-10-10
+- Files changed by other programs are refreshed: open documents without unsaved edits reload by themselves (cursor and scroll position stay); if you have unsaved edits you get a hint instead.
+- New: File → Refresh from Disk (F5) loads the newest version of the file (asks first if you have unsaved edits).
+
 ## 1.3.4 — 2026-10-10
 - Icon fades swapped: dark themes now show the dark fade and light themes the light fade — in the menu bar, on the start screen and in the taskbar.
 

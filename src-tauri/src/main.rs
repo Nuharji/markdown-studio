@@ -76,6 +76,22 @@ async fn read_file(path: String) -> Result<Doc, String> {
     load(Path::new(&path))
 }
 
+/// Modification times (ms since 1970) of files, so the UI notices changes made by other programs; 0 if missing.
+#[tauri::command]
+async fn file_stamps(paths: Vec<String>) -> Vec<u64> {
+    paths
+        .iter()
+        .map(|p| {
+            std::fs::metadata(p)
+                .and_then(|m| m.modified())
+                .ok()
+                .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+                .map(|d| d.as_millis() as u64)
+                .unwrap_or(0)
+        })
+        .collect()
+}
+
 #[tauri::command]
 async fn save_file(
     app: AppHandle,
@@ -250,6 +266,7 @@ fn main() {
             clipboard_write,
             open_files,
             read_file,
+            file_stamps,
             save_file,
             export_html,
             save_bytes,
