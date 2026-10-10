@@ -1,6 +1,8 @@
 // Hide the console window in release builds on Windows.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod markdown;
+
 use serde::{Deserialize, Serialize};
 use std::{
     fs,
@@ -267,6 +269,7 @@ fn main() {
             open_files,
             read_file,
             file_stamps,
+            markdown::md_render,
             save_file,
             export_html,
             save_bytes,

@@ -43,3 +43,5 @@ Dev mode with live reload: `npx @tauri-apps/cli@2 icon app-icon.png` once, then 
 - Builds are unsigned. Windows SmartScreen and macOS Gatekeeper will warn on first launch
   (macOS: right-click the app → Open). Signing needs your own certificates.
 - `.md` / `.markdown` files are associated with the app by the installers.
+
+Markdown → HTML: `src-tauri/src/markdown.rs` (pulldown-cmark); the UI draws math (KaTeX), diagrams (Mermaid) and code colors (highlight.js).

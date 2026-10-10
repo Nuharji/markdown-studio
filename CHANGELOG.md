@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.4.0 — 2026-10-10
+- Markdown is now turned into HTML by the app's Rust core (pulldown-cmark) instead of a JavaScript library: GitHub-style tables, task lists, strikethrough, footnotes and bare links (https://…, www.…), math ($…$, $$…, `` `math ``) and Mermaid diagrams as before.
+- The preview's line anchors for synchronized scrolling now come from Rust too.
+- The syntax guide renders all its examples in one go.
 ## 1.3.5 — 2026-10-10
 - Files changed by other programs are refreshed: open documents without unsaved edits reload by themselves (cursor and scroll position stay); if you have unsaved edits you get a hint instead.
 - New: File → Refresh from Disk (F5) loads the newest version of the file (asks first if you have unsaved edits).

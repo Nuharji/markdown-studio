@@ -172,22 +172,11 @@ function t(key, vars) {
 const fmtKey = k => lang === 'de' ? k.replace(/Ctrl/g, 'Strg').replace(/Shift/g, 'Umschalt') : k;
 const num = n => n.toLocaleString(lang);
 
-const LIBS_OK = !!(window.marked && window.katex && window.DOMPurify);
+const LIBS_OK = !!(window.katex && window.DOMPurify && invoke);
 if (!LIBS_OK) document.body.insertAdjacentHTML('beforeend', `<div class="libfail">${t('libfail')}</div>`);
 
 /* ================= Rendering ================= */
 const MACROS = {'\\R':'\\mathbb{R}','\\N':'\\mathbb{N}','\\Z':'\\mathbb{Z}','\\Q':'\\mathbb{Q}','\\C':'\\mathbb{C}'};
-let mathStore = [], diagramStore = [];
-function mathPH(tex, display) {
-  mathStore.push({tex, display});
-  const i = mathStore.length - 1;
-  return display ? `<div class="math-block" data-math="${i}"></div>` : `<span class="math-inline" data-math="${i}"></span>`;
-}
-function diagramPH(code) {
-  diagramStore.push(code);
-  return `<div class="diagram" data-diagram="${diagramStore.length - 1}"></div>`;
-}
-
 /* Mermaid diagrams render asynchronously, one at a time, cached by theme + source. */
 const MERMAID_OK = !!window.mermaid;
 const svgCache = new Map();
@@ -227,70 +216,23 @@ function renderDiagram(el, code, prevHtml, tools) {
     if (el.isConnected) fillDiagram(el, res, tools);
   });
 }
-if (LIBS_OK) marked.use({
-  gfm: true,
-  extensions: [
-    { name: 'blockMath', level: 'block',
-      start(src) { const m = /(?:^|\n)\$\$/.exec(src); return m ? m.index + (m[0][0] === '\n' ? 1 : 0) : undefined; },
-      tokenizer(src) {
-        const m = /^\$\$([\s\S]+?)\$\$[ \t]*(?:\n|$)/.exec(src);
-        if (m) return {type: 'blockMath', raw: m[0], text: m[1].trim()};
-      },
-      renderer(tok) { return mathPH(tok.text, true); } },
-    { name: 'inlineMath', level: 'inline',
-      start(src) { const m = /(?<!\\)\$/.exec(src); return m ? m.index : undefined; },
-      tokenizer(src) {
-        let m = /^\$\$([\s\S]+?)\$\$/.exec(src);
-        if (m) return {type: 'inlineMath', raw: m[0], text: m[1].trim(), display: true};
-        m = /^\$(?![\s$])((?:\\.|[^\\$\n])+?)(?<!\s)\$(?!\d)/.exec(src);
-        if (m) return {type: 'inlineMath', raw: m[0], text: m[1], display: false};
-      },
-      renderer(tok) { return mathPH(tok.text, tok.display); } }
-  ],
-  renderer: {
-    code(code, info) {
-      const lang = (info || '').trim().toLowerCase();
-      if (lang === 'math') return mathPH(code, true);
-      if (lang === 'mermaid') return diagramPH(code);
-      return false;
-    }
-  }
-});
-
-/* Parse block by block and tag each block's first element with its source line (data-line) for scroll sync. */
-function parseWithLines(src) {
-  src = src.replace(/\r\n?/g, '\n');
-  const toks = marked.lexer(src);
-  let html = '', pos = 0, line = 0;
-  for (let i = 0; i < toks.length; i++) {
-    const group = [toks[i]];
-    while (toks[i].type === 'text' && toks[i + 1] && toks[i + 1].type === 'text') group.push(toks[++i]);
-    const at = src.indexOf(group[0].raw, pos);
-    if (at >= 0) {
-      for (let j = pos; j < at; j++) if (src.charCodeAt(j) === 10) line++;
-      const start = line;
-      for (const tk of group) for (let j = 0; j < tk.raw.length; j++) if (tk.raw.charCodeAt(j) === 10) line++;
-      pos = at + group.reduce((n, tk) => n + tk.raw.length, 0);
-      const part = marked.parser(Object.assign(group, {links: toks.links}));
-      html += part.replace(/^(\s*<[a-zA-Z][\w-]*)/, `$1 data-line="${start}"`);
-    } else html += marked.parser(Object.assign(group, {links: toks.links}));
-  }
-  return html;
-}
-
-function renderInto(root, src) {
-  mathStore = []; diagramStore = [];
+/* Markdown is turned into HTML in Rust (markdown.rs): GitHub-style Markdown, math and diagram placeholders, and
+   data-line anchors for synchronized scrolling. Here it is sanitized and the formulas, diagrams and code colors are drawn. */
+async function mdRender(sources, inline = false) { return invoke('md_render', {sources, inline}); }
+/* r = {html, math: [[tex, display]], diagrams: [code]} from Rust. */
+function renderInto(root, r) {
   // Keep the previous drawings so a diagram being edited doesn't flash empty while it re-renders.
   const prev = [...root.querySelectorAll('[data-diagram]')].map(el => el.classList.contains('error') ? '' : el.innerHTML);
-  root.innerHTML = DOMPurify.sanitize(parseWithLines(src));
-  const diagrams = diagramStore, tools = root === paper;
-  root.querySelectorAll('[data-diagram]').forEach((el, i) => renderDiagram(el, diagrams[+el.dataset.diagram], prev[i], tools));
+  root.innerHTML = DOMPurify.sanitize(r.html);
+  const tools = root === paper;
+  root.querySelectorAll('[data-diagram]').forEach((el, i) => renderDiagram(el, r.diagrams[+el.dataset.diagram], prev[i], tools));
   const macros = {...MACROS};
   root.querySelectorAll('[data-math]').forEach(el => {
-    const m = mathStore[+el.dataset.math];
+    const m = r.math[+el.dataset.math];
     if (!m) return;
-    try { el.innerHTML = katex.renderToString(m.tex, {displayMode: m.display, throwOnError: false, macros, strict: 'ignore'}); }
-    catch (e) { el.textContent = m.tex; el.classList.add('math-error'); el.title = e.message; }
+    const [tex, display] = m;
+    try { el.innerHTML = katex.renderToString(tex, {displayMode: display, throwOnError: false, macros, strict: 'ignore'}); }
+    catch (e) { el.textContent = tex; el.classList.add('math-error'); el.title = e.message; }
   });
   if (window.hljs) root.querySelectorAll('pre code[class*="language-"]').forEach(c => {
     const l = [...c.classList].find(x => x.startsWith('language-')).slice(9);
@@ -493,10 +435,14 @@ ed.addEventListener('input', () => {
   updateCursor();
 });
 
-function render() {
+let renderSeq = 0;
+async function render() {
   clearTimeout(rT);
   if (!LIBS_OK) { paper.textContent = ed.value; return; }
-  renderInto(paper, ed.value);
+  // Results of older keystrokes that arrive late are ignored.
+  const my = ++renderSeq, [r] = await mdRender([ed.value]);
+  if (my !== renderSeq) return;
+  renderInto(paper, r);
   invalidateSync(); buildOutline(); updateStats();
 }
 
@@ -898,19 +844,21 @@ const SYMBOLS = String.raw`\alpha \beta \gamma \delta \epsilon \theta \lambda \m
 \to \Rightarrow \Leftrightarrow \mapsto \mathbb{R} \mathbb{N} \mathbb{Z} \mathbb{C} \ldots`.split(/\s+/);
 
 let cardsBuilt = false;
-function buildCards() {
+async function buildCards() {
   if (cardsBuilt || !LIBS_OK) return; cardsBuilt = true;
   for (const kind of ['md', 'diagram', 'latex']) {
     const box = $({md: '#mdCards', diagram: '#dgCards', latex: '#latexCards'}[kind]);
+    // All examples and descriptions of a section are rendered in Rust in one go.
+    const outs = await mdRender(REF[kind].map(r => r.code)), descs = await mdRender(REF[kind].map(r => refText(r).desc || ''), true);
     box.innerHTML = '';
-    REF[kind].forEach(r => {
+    REF[kind].forEach((r, k) => {
       const {title, desc} = refText(r), c = document.createElement('div');
       c.className = 'card';
       c.dataset.search = [title, desc, r.en.title, r.code].join(' ').toLowerCase();
       c.innerHTML = `<div class="card-h"><span>${esc(title)}</span><button class="btn-sm">${esc(t('ui.insert'))}</button></div>
-        ${desc ? `<div class="desc">${DOMPurify.sanitize(marked.parseInline(desc))}</div>` : ''}
+        ${desc ? `<div class="desc">${DOMPurify.sanitize(descs[k].html)}</div>` : ''}
         <pre class="src">${esc(r.code)}</pre><div class="out ${paperClass()}"></div>`;
-      renderInto(c.querySelector('.out'), r.code);
+      renderInto(c.querySelector('.out'), outs[k]);
       c.querySelector('button').onclick = () => {
         if (!cur()) A.newDoc();
         r.code.includes('\n') ? insertBlock(r.code) : insertAtCursor(r.code);
@@ -1087,7 +1035,7 @@ const A = {
   about: async () => {
     const v = invoke ? await window.__TAURI__.app.getVersion().catch(() => '') : '';
     modal(t('a.about'), `${v ? `<p><b>${t('about.version', {v: esc(v)})}</b></p>` : ''}<p>${t('about.p1')}</p>
-    <p>${t('about.p2', {libs: '<a href="https://marked.js.org">marked</a>, <a href="https://katex.org">KaTeX</a>, <a href="https://mermaid.js.org">Mermaid</a>, <a href="https://highlightjs.org">highlight.js</a>, DOMPurify'})}</p>
+    <p>${t('about.p2', {libs: '<a href="https://github.com/pulldown-cmark/pulldown-cmark">pulldown-cmark</a> (Rust), <a href="https://katex.org">KaTeX</a>, <a href="https://mermaid.js.org">Mermaid</a>, <a href="https://highlightjs.org">highlight.js</a>, DOMPurify'})}</p>
     <p>${t('about.p3')}</p>`);
   }
 };
