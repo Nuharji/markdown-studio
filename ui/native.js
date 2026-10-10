@@ -69,6 +69,24 @@
     const syncTitle = () => { const t = document.title; if (t && t !== lastTitle) { lastTitle = t; win.setTitle(t).catch(() => {}); } };
     if (titleEl) new MutationObserver(syncTitle).observe(titleEl, {childList: true, characterData: true, subtree: true});
     syncTitle();
+    // The window / taskbar icon follows the theme like the logo in the menu bar: it is drawn from the app's tile
+    // colors (CSS --tile-a/--tile-b) and letters, with the same shape as the installed icon.
+    let lastIcon = '';
+    const syncIcon = () => {
+      const logo = document.querySelector('.logo span') || document.querySelector('.logo'), cs = getComputedStyle(document.documentElement);
+      const a = cs.getPropertyValue('--tile-a').trim(), b = cs.getPropertyValue('--tile-b').trim();
+      if (!logo || !a || !b || a + b === lastIcon) return;
+      lastIcon = a + b;
+      const s = 256, c = document.createElement('canvas'), g = c.getContext('2d'), m = s * 0.0625, w = s - 2 * m;
+      c.width = c.height = s;
+      const grad = g.createLinearGradient(m, m, m + w, m + w); grad.addColorStop(0, a); grad.addColorStop(1, b);
+      g.fillStyle = grad; g.beginPath(); g.roundRect(m, m, w, w, w * 0.225); g.fill();
+      g.fillStyle = '#fff'; g.font = `700 ${Math.round(s * 0.332)}px "Segoe UI", system-ui, sans-serif`;
+      g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(logo.textContent.trim(), s / 2, s / 2 + s * 0.02);
+      c.toBlob(async blob => { if (blob) win.setIcon(new Uint8Array(await blob.arrayBuffer())).catch(() => {}); }, 'image/png');
+    };
+    new MutationObserver(syncIcon).observe(document.documentElement, {attributes: true, attributeFilter: ['data-theme']});
+    syncIcon();
     window.__TAURI__.event.listen('context-menu', ev => {
       const id = String(ev.payload);
       if (id.startsWith('native:')) nativeAction(id.slice(7));

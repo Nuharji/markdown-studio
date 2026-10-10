@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.3.3 — 2026-10-10
+- The app icon follows the theme: a light fade in dark themes, a dark fade in light themes — in the menu bar, on the start screen and in the window/taskbar icon.
+- All Studio icons now have exactly the same rounded corners.
+
 ## 1.3.2 — 2026-10-10
 - Synchronized scrolling now follows the content: each heading, paragraph, diagram, formula and code block in the editor lines up with the same block in the preview (in both directions), instead of just matching the scroll percentage.
 - New app icon with a dark-to-bright blue fade, matching the Studio family look (also in the title bar and start screen).
