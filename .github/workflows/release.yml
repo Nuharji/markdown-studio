@@ -79,13 +79,20 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+      - name: Release notes from CHANGELOG.md
+        run: |
+          v="${GITHUB_REF_NAME#v}"
+          awk -v v="$v" '/^## /{p = (index($0, "## " v " ") == 1 || $0 == "## " v); next} p' CHANGELOG.md > notes.md
+          [ -s notes.md ] || echo "See CHANGELOG.md" > notes.md
+          cat notes.md
       - uses: actions/download-artifact@v4
         with:
           path: artifacts
       - uses: softprops/action-gh-release@v2
         with:
           name: ${{ env.APP_NAME }} ${{ github.ref_name }}
-          generate_release_notes: true
+          body_path: notes.md
           files: artifacts/**/*
 
   flatpak:
