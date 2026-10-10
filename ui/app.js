@@ -253,11 +253,32 @@ if (LIBS_OK) marked.use({
   }
 });
 
+/* Parse block by block and tag each block's first element with its source line (data-line) for scroll sync. */
+function parseWithLines(src) {
+  src = src.replace(/\r\n?/g, '\n');
+  const toks = marked.lexer(src);
+  let html = '', pos = 0, line = 0;
+  for (let i = 0; i < toks.length; i++) {
+    const group = [toks[i]];
+    while (toks[i].type === 'text' && toks[i + 1] && toks[i + 1].type === 'text') group.push(toks[++i]);
+    const at = src.indexOf(group[0].raw, pos);
+    if (at >= 0) {
+      for (let j = pos; j < at; j++) if (src.charCodeAt(j) === 10) line++;
+      const start = line;
+      for (const tk of group) for (let j = 0; j < tk.raw.length; j++) if (tk.raw.charCodeAt(j) === 10) line++;
+      pos = at + group.reduce((n, tk) => n + tk.raw.length, 0);
+      const part = marked.parser(Object.assign(group, {links: toks.links}));
+      html += part.replace(/^(\s*<[a-zA-Z][\w-]*)/, `$1 data-line="${start}"`);
+    } else html += marked.parser(Object.assign(group, {links: toks.links}));
+  }
+  return html;
+}
+
 function renderInto(root, src) {
   mathStore = []; diagramStore = [];
   // Keep the previous drawings so a diagram being edited doesn't flash empty while it re-renders.
   const prev = [...root.querySelectorAll('[data-diagram]')].map(el => el.classList.contains('error') ? '' : el.innerHTML);
-  root.innerHTML = DOMPurify.sanitize(marked.parse(src));
+  root.innerHTML = DOMPurify.sanitize(parseWithLines(src));
   const diagrams = diagramStore, tools = root === paper;
   root.querySelectorAll('[data-diagram]').forEach((el, i) => renderDiagram(el, diagrams[+el.dataset.diagram], prev[i], tools));
   const macros = {...MACROS};
@@ -423,7 +444,7 @@ function render() {
   clearTimeout(rT);
   if (!LIBS_OK) { paper.textContent = ed.value; return; }
   renderInto(paper, ed.value);
-  buildOutline(); updateStats();
+  invalidateSync(); buildOutline(); updateStats();
 }
 
 /* ================= Status, outline & stats ================= */
@@ -1192,6 +1213,7 @@ function applyLanguage() {
 }
 let lastMermaidTheme = null;
 function applySettings() {
+  invalidateSync();
   if (!THEMES.includes(settings.theme)) settings.theme = 'dark';
   const nl = effectiveLang();
   if (nl !== lang) { lang = nl; applyLanguage(); }
@@ -1233,17 +1255,56 @@ $('#splitter').addEventListener('pointerdown', e => {
   sp.addEventListener('pointerup', () => { sp.removeEventListener('pointermove', move); sp.classList.remove('drag'); saveSession(); }, {once: true});
 });
 
-/* Synchronized scrolling */
+/* Synchronized scrolling: source lines are matched to the preview blocks they produced (data-line),
+   and positions between two such anchors are interpolated, so headings, diagrams and math stay aligned. */
 let syncLock = null, syncT;
+function invalidateSync() { editorLineTops.cache = null; }
+/* Pixel top of every source line in the editor (measured with a hidden mirror, wrapping included). */
+function editorLineTops() {
+  if (editorLineTops.cache) return editorLineTops.cache;
+  const cs = getComputedStyle(ed), mirror = document.createElement('div');
+  Object.assign(mirror.style, {position: 'absolute', visibility: 'hidden', top: '0', left: '-9999px', boxSizing: 'border-box',
+    width: ed.clientWidth + 'px', padding: cs.padding, fontFamily: cs.fontFamily, fontSize: cs.fontSize, lineHeight: cs.lineHeight,
+    letterSpacing: cs.letterSpacing, tabSize: cs.tabSize, whiteSpace: settings.wrap ? 'pre-wrap' : 'pre', overflowWrap: 'break-word'});
+  const frag = document.createDocumentFragment();
+  for (const l of ed.value.split('\n')) { const d = document.createElement('div'); d.textContent = l || '​'; frag.append(d); }
+  mirror.append(frag); document.body.append(mirror);
+  const tops = [...mirror.children].map(d => d.offsetTop);
+  mirror.remove();
+  return editorLineTops.cache = tops;
+}
+/* Matching [editorY, previewY] pairs, increasing on both sides, from the top to the end of both panes. */
+function syncPoints() {
+  const tops = editorLineTops(), base = canvas.getBoundingClientRect().top - canvas.scrollTop;
+  const edMax = Math.max(0, ed.scrollHeight - ed.clientHeight), pvMax = Math.max(0, canvas.scrollHeight - canvas.clientHeight);
+  const pts = [[0, 0]];
+  for (const el of paper.children) {
+    const ln = el.dataset.line;
+    if (ln == null || tops[ln] == null) continue;
+    const e = tops[ln], p = el.getBoundingClientRect().top - base - 16, last = pts[pts.length - 1];
+    if (e > last[0] && p > last[1] && e < edMax && p < pvMax) pts.push([e, p]);
+  }
+  pts.push([edMax, pvMax]);
+  return pts;
+}
+function mapScroll(y, pts, from, to) {
+  for (let i = 1; i < pts.length; i++) {
+    const a = pts[i - 1], b = pts[i];
+    if (y <= b[from]) return a[to] + (b[to] - a[to]) * (b[from] === a[from] ? 0 : (y - a[from]) / (b[from] - a[from]));
+  }
+  return pts[pts.length - 1][to];
+}
 function syncFrom(src, dst, tag) {
   if (!settings.sync || settings.view !== 'split' || (syncLock && syncLock !== tag)) return;
   syncLock = tag;
-  const r = src.scrollTop / Math.max(1, src.scrollHeight - src.clientHeight);
-  dst.scrollTop = r * (dst.scrollHeight - dst.clientHeight);
+  const fromEd = src === ed;
+  dst.scrollTop = mapScroll(src.scrollTop, syncPoints(), fromEd ? 0 : 1, fromEd ? 1 : 0);
   clearTimeout(syncT); syncT = setTimeout(() => syncLock = null, 100);
 }
 ed.addEventListener('scroll', () => syncFrom(ed, canvas, 'e'));
 canvas.addEventListener('scroll', () => syncFrom(canvas, ed, 'p'));
+ed.addEventListener('input', invalidateSync);
+new ResizeObserver(invalidateSync).observe(ed);
 
 /* Global shortcuts */
 function comboOf(e) {

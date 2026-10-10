@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.3.2 — 2026-10-10
+- Synchronized scrolling now follows the content: each heading, paragraph, diagram, formula and code block in the editor lines up with the same block in the preview (in both directions), instead of just matching the scroll percentage.
+- New app icon with a dark-to-bright blue fade, matching the Studio family look (also in the title bar and start screen).
+
 ## 1.3.1 — 2026-10-10
 - The Windows taskbar and Alt+Tab now show the open document's name.
 
