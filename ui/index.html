@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Markdown Studio</title>
+<link rel="stylesheet" href="vendor/katex/katex.min.css">
+<link rel="stylesheet" id="hljsLight" href="vendor/hljs/github.min.css">
+<link rel="stylesheet" id="hljsDark" href="vendor/hljs/github-dark.min.css" disabled>
+<script src="vendor/marked.min.js"></script>
+<script src="vendor/katex/katex.min.js"></script>
+<script src="vendor/purify.min.js"></script>
+<script src="vendor/hljs/highlight.min.js"></script>
+<script src="vendor/mermaid.min.js"></script>
+
+<!-- Document typography (also embedded into HTML exports) -->
+<style id="md-css">
+.paper{background:#fff;max-width:var(--paperw,860px);margin:0 auto;padding:56px 72px 80px;box-sizing:border-box}
+.paper.dark{background:#1c1c1c}
+.paper.gh{padding:32px 45px 48px}
+.paper.gh.dark{background:#0d1117}
+.md{font:16px/1.7 "Segoe UI",system-ui,-apple-system,sans-serif;color:#1f2328;overflow-wrap:break-word}
+.md.serif{font-family:Georgia,"Times New Roman",serif}
+.md>*:first-child{margin-top:0}
+.md h1,.md h2,.md h3,.md h4,.md h5,.md h6{margin:1.4em 0 .6em;line-height:1.25;font-weight:650;color:#111}
+.md h1{font-size:2.1em;padding-bottom:.3em;border-bottom:1px solid #e3e3e3}
+.md h2{font-size:1.55em;padding-bottom:.25em;border-bottom:1px solid #eee}
+.md h3{font-size:1.25em}.md h4{font-size:1.05em}.md h5{font-size:.95em}.md h6{font-size:.9em;color:#666}
+.md p,.md ul,.md ol,.md blockquote,.md pre,.md table,.md details,.md .math-block{margin:0 0 1em}
+.md a{color:#1473e6;text-decoration:none}.md a:hover{text-decoration:underline}
+.md code{font:.88em/1.5 Consolas,"Cascadia Code",monospace;background:#f2f2f2;padding:.15em .4em;border-radius:4px}
+.md pre{background:#f6f8fa;border:1px solid #e6e6e6;border-radius:6px;padding:14px 16px;overflow:auto}
+.md pre code,.md pre code.hljs{background:none;padding:0;font-size:.86em}
+.md blockquote{margin-left:0;padding:.3em 1em;border-left:4px solid #378ef0;background:#f4f8fe;color:#444;border-radius:0 4px 4px 0}
+.md blockquote>:last-child{margin-bottom:0}
+.md table{border-collapse:collapse;display:block;overflow:auto;width:max-content;max-width:100%}
+.md th,.md td{border:1px solid #dcdcdc;padding:6px 12px}.md th{background:#f3f3f3;font-weight:600}
+.md tr:nth-child(2n) td{background:#fafafa}
+.md img{max-width:100%;border-radius:4px}
+.md hr{border:0;border-top:2px solid #e6e6e6;margin:2em 0}
+.md ul,.md ol{padding-left:1.8em}.md li+li{margin-top:.25em}
+.md li:has(>input[type=checkbox]){list-style:none;margin-left:-1.4em}
+.md input[type=checkbox]{margin:0 .5em 0 0;accent-color:#378ef0;vertical-align:middle}
+.md kbd{font:.8em Consolas,monospace;padding:.15em .45em;border:1px solid #ccc;border-bottom-width:2px;border-radius:4px;background:#fafafa}
+.md mark{background:#fff3a3;padding:0 .15em}
+.md details{border:1px solid #e3e3e3;border-radius:6px;padding:.5em 1em}
+.md summary{cursor:pointer;font-weight:600}
+.md .math-block{overflow-x:auto;overflow-y:hidden;padding:.2em 0}
+.md .math-error,.md .katex-error{color:#d7373f}
+.md .example{border:1px dashed #cfd8e6;border-radius:6px;padding:12px 16px;margin:0 0 1.6em;background:#fbfcfe;overflow-x:auto}
+.md .example>:last-child{margin-bottom:0}
+.md .diagram{position:relative;margin:0 0 1em;text-align:center;overflow-x:auto;min-height:32px}
+.md .diagram svg{max-width:100%;height:auto}
+.md .diagram.pending{opacity:.55}
+.md .dg-error{text-align:left;border:1px solid #f1b0b5;background:#fff5f5;color:#b4232c;border-radius:6px;padding:10px 14px;font-size:.85em}
+.md .dg-error pre{margin:6px 0 0;padding:0;border:0;background:none;color:inherit;white-space:pre-wrap;font:12px/1.4 Consolas,monospace}
+.md.dark .dg-error{background:#2a1517;border-color:#5c2b30;color:#ff9aa2}
+.md .dg-tools{position:absolute;top:6px;right:6px;display:flex;gap:4px;opacity:0;transition:opacity .15s}
+.md .diagram:hover .dg-tools,.md .dg-tools:focus-within{opacity:1}
+.md .dg-tools button{font:600 11px "Segoe UI",system-ui,sans-serif;padding:3px 8px;border-radius:4px;border:1px solid rgba(0,0,0,.18);background:rgba(255,255,255,.94);color:#333;cursor:pointer}
+.md .dg-tools button:hover{background:#fff;border-color:rgba(0,0,0,.35)}
+.md.dark .dg-tools button{background:rgba(40,40,40,.94);color:#ddd;border-color:#555}
+@media print{.md .dg-tools{display:none}}
+.md.dark{color:#d8d8d8}
+.md.dark h1,.md.dark h2,.md.dark h3,.md.dark h4,.md.dark h5{color:#f2f2f2}
+.md.dark h1,.md.dark h2,.md.dark hr{border-color:#383838}
+.md.dark a{color:#5aa9ff}
+.md.dark code{background:#2c2c2c}
+.md.dark pre{background:#151515;border-color:#333}
+.md.dark pre code{background:none}
+.md.dark blockquote{background:#1d2836;color:#c6c6c6}
+.md.dark th{background:#292929}.md.dark th,.md.dark td{border-color:#3a3a3a}
+.md.dark tr:nth-child(2n) td{background:#222}
+.md.dark kbd{background:#2c2c2c;border-color:#555}
+.md.dark mark{background:#6b5d12;color:#fff}
+.md.dark details{border-color:#3a3a3a}
+.md.dark .example{background:#1f242b;border-color:#3a4a5e}
+/* GitHub style (github.com markdown-body) */
+.md.gh{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans",Helvetica,Arial,sans-serif;line-height:1.5;color:#1f2328}
+.md.gh.serif{font-family:Georgia,"Times New Roman",serif}
+.md.gh h1,.md.gh h2,.md.gh h3,.md.gh h4,.md.gh h5,.md.gh h6{margin:24px 0 16px;font-weight:600;line-height:1.25;color:#1f2328}
+.md.gh h1{font-size:2em;padding-bottom:.3em;border-bottom:1px solid #d1d9e0b3}
+.md.gh h2{font-size:1.5em;padding-bottom:.3em;border-bottom:1px solid #d1d9e0b3}
+.md.gh h3{font-size:1.25em}.md.gh h4{font-size:1em}.md.gh h5{font-size:.875em}.md.gh h6{font-size:.85em;color:#59636e}
+.md.gh p,.md.gh ul,.md.gh ol,.md.gh blockquote,.md.gh pre,.md.gh table,.md.gh details,.md.gh .math-block{margin:0 0 16px}
+.md.gh a{color:#0969da}
+.md.gh code{font:85%/1.45 ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;background:rgba(129,139,152,.12);padding:.2em .4em;border-radius:6px}
+.md.gh pre{background:#f6f8fa;border:0;border-radius:6px;padding:16px}
+.md.gh pre code{background:none;padding:0;font-size:85%}
+.md.gh blockquote{padding:0 1em;color:#59636e;border-left:.25em solid #d1d9e0;background:none;border-radius:0}
+.md.gh th,.md.gh td{padding:6px 13px;border:1px solid #d1d9e0}
+.md.gh th{background:none;font-weight:600}
+.md.gh tr:nth-child(2n) td{background:#f6f8fa}
+.md.gh hr{height:.25em;padding:0;margin:24px 0;background:#d1d9e0;border:0}
+.md.gh kbd{font:11px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;padding:3px 5px;color:#1f2328;background:#f6f8fa;border:1px solid #d1d9e0b3;border-radius:6px;box-shadow:inset 0 -1px 0 #d1d9e0b3}
+.md.gh mark{background:#fff8c5;color:#1f2328}
+.md.gh details{border:0;padding:0}
+.md.gh .example{background:#f6f8fa;border:1px dashed #d1d9e0}
+.md.gh.dark{color:#f0f6fc}
+.md.gh.dark h1,.md.gh.dark h2,.md.gh.dark h3,.md.gh.dark h4,.md.gh.dark h5{color:#f0f6fc}
+.md.gh.dark h1,.md.gh.dark h2{border-color:#3d444db3}
+.md.gh.dark h6{color:#9198a1}
+.md.gh.dark a{color:#4493f8}
+.md.gh.dark code{background:rgba(101,108,118,.2)}
+.md.gh.dark pre{background:#151b23}
+.md.gh.dark pre code{background:none}
+.md.gh.dark blockquote{color:#9198a1;border-left-color:#3d444d;background:none}
+.md.gh.dark th,.md.gh.dark td{border-color:#3d444d}
+.md.gh.dark th{background:none}
+.md.gh.dark tr:nth-child(2n) td{background:#151b23}
+.md.gh.dark hr{background:#3d444d}
+.md.gh.dark kbd{color:#f0f6fc;background:#151b23;border-color:#3d444db3;box-shadow:inset 0 -1px 0 #3d444db3}
+.md.gh.dark mark{background:#bb800926;color:#f0f6fc}
+.md.gh.dark .example{background:#151b23;border-color:#3d444d}
+</style>
+
+<!-- Application chrome. Each theme is a set of CSS variables. -->
+<style>
+:root,[data-theme="dark"]{
+  --font-ui:"Segoe UI",system-ui,-apple-system,sans-serif;
+  --bg:#1b1b1b;--chrome:#2b2b2b;--chrome2:#323232;--panel:#262626;--line:#111;--border:#3c3c3c;--hover:#3e3e3e;
+  --text:#d6d6d6;--dim:#949494;--strong:#fff;--accent:#378ef0;--accent2:#2680eb;--on-accent:#fff;
+  --cta:#2680eb;--cta-hover:#1473e6;--cta-radius:12px;--btn-radius:13px;--radius:4px;
+  --editor-bg:#1e1e1e;--editor-fg:#e3e3e3;--selection:#264f78;--input-bg:#1e1e1e;--input-border:#4a4a4a;
+  --pane-head:#232323;--workarea:#2a2a2a;--workarea-dark:#121212;--dd-bg:#303030;--dd-border:#474747;
+  --dd-hover-bg:#2680eb;--dd-hover-fg:#fff;--card-bg:#2d2d2d;--card-border:#393939;--code-bg:#1b1b1b;
+  --tab-bg:#262626;--tab-active:#1e1e1e;--tab-ind:inset 0 2px #378ef0;--dock-ind:#e8e8e8;
+  --seg-bg:#1e1e1e;--seg-active:#4b4b4b;--btn-active-bg:#1c1c1c;--btn-active-border:#555;
+  --thumb:#4a4a4a;--thumb-hover:#5c5c5c;--shadow:0 10px 28px rgba(0,0,0,.55);
+  --paper-bg:#fff;--paper-line:#d4d4d4;--paper-border:none;--paper-radius:0;
+  --paper-shadow:0 0 0 1px rgba(0,0,0,.45),0 8px 30px rgba(0,0,0,.45);
+  --switch-off:#5a5a5a;--modal-bg:#2c2c2c;--overlay:rgba(0,0,0,.55);--ok:#2d9d78;--warn:#e68619;--danger:#d7373f;
+  color-scheme:dark}
+[data-theme="light"]{
+  --font-ui:"Segoe UI",system-ui,-apple-system,sans-serif;
+  --bg:#e8e8e8;--chrome:#f8f8f8;--chrome2:#efefef;--panel:#f5f5f5;--line:#cacaca;--border:#dcdcdc;--hover:#e1e1e1;
+  --text:#323232;--dim:#6e6e6e;--strong:#000;--accent:#1473e6;--accent2:#1473e6;--on-accent:#fff;
+  --cta:#1473e6;--cta-hover:#0d66d0;--cta-radius:12px;--btn-radius:13px;--radius:4px;
+  --editor-bg:#fff;--editor-fg:#1f1f1f;--selection:#b5d5fb;--input-bg:#fff;--input-border:#b3b3b3;
+  --pane-head:#f0f0f0;--workarea:#d9d9d9;--workarea-dark:#5a5a5a;--dd-bg:#fff;--dd-border:#d0d0d0;
+  --dd-hover-bg:#1473e6;--dd-hover-fg:#fff;--card-bg:#fff;--card-border:#dedede;--code-bg:#f2f2f2;
+  --tab-bg:#e9e9e9;--tab-active:#fff;--tab-ind:inset 0 2px #1473e6;--dock-ind:#323232;
+  --seg-bg:#fff;--seg-active:#dadada;--btn-active-bg:#fff;--btn-active-border:#b3b3b3;
+  --thumb:#c2c2c2;--thumb-hover:#a8a8a8;--shadow:0 8px 24px rgba(0,0,0,.18);
+  --paper-bg:#fff;--paper-line:#d4d4d4;--paper-border:none;--paper-radius:0;
+  --paper-shadow:0 0 0 1px rgba(0,0,0,.08),0 6px 24px rgba(0,0,0,.15);
+  --switch-off:#b3b3b3;--modal-bg:#fff;--overlay:rgba(0,0,0,.35);--ok:#2d9d78;--warn:#e68619;--danger:#d7373f;
+  color-scheme:light}
+[data-theme="github"]{
+  --font-ui:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans",Helvetica,Arial,sans-serif;
+  --bg:#f6f8fa;--chrome:#f6f8fa;--chrome2:#fff;--panel:#fff;--line:#d1d9e0;--border:#d1d9e0;--hover:#eaeef2;
+  --text:#1f2328;--dim:#59636e;--strong:#1f2328;--accent:#0969da;--accent2:#0969da;--on-accent:#fff;
+  --cta:#1f883d;--cta-hover:#1a7f37;--cta-radius:6px;--btn-radius:6px;--radius:6px;
+  --editor-bg:#fff;--editor-fg:#1f2328;--selection:#b6e3ff;--input-bg:#f6f8fa;--input-border:#d1d9e0;
+  --pane-head:#f6f8fa;--workarea:#f6f8fa;--workarea-dark:#d1d9e0;--dd-bg:#fff;--dd-border:#d1d9e0;
+  --dd-hover-bg:#eaeef2;--dd-hover-fg:#1f2328;--card-bg:#fff;--card-border:#d1d9e0;--code-bg:#f6f8fa;
+  --tab-bg:#f6f8fa;--tab-active:#fff;--tab-ind:inset 0 -2px #fd8c73;--dock-ind:#fd8c73;
+  --seg-bg:#f6f8fa;--seg-active:#fff;--btn-active-bg:#fff;--btn-active-border:#d1d9e0;
+  --thumb:#c8d1da;--thumb-hover:#afb8c1;--shadow:0 8px 24px rgba(140,149,159,.25);
+  --paper-bg:#fff;--paper-line:#d1d9e0;--paper-border:1px solid #d1d9e0;--paper-radius:6px;--paper-shadow:none;
+  --switch-off:#d1d9e0;--modal-bg:#fff;--overlay:rgba(31,35,40,.5);--ok:#1a7f37;--warn:#9a6700;--danger:#d1242f;
+  color-scheme:light}
+[data-theme="github-dark"]{
+  --font-ui:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans",Helvetica,Arial,sans-serif;
+  --bg:#010409;--chrome:#010409;--chrome2:#0d1117;--panel:#0d1117;--line:#3d444d;--border:#3d444d;--hover:#262c36;
+  --text:#f0f6fc;--dim:#9198a1;--strong:#fff;--accent:#4493f8;--accent2:#1f6feb;--on-accent:#fff;
+  --cta:#238636;--cta-hover:#29903b;--cta-radius:6px;--btn-radius:6px;--radius:6px;
+  --editor-bg:#0d1117;--editor-fg:#f0f6fc;--selection:rgba(56,139,253,.4);--input-bg:#0d1117;--input-border:#3d444d;
+  --pane-head:#151b23;--workarea:#010409;--workarea-dark:#010409;--dd-bg:#151b23;--dd-border:#3d444d;
+  --dd-hover-bg:#262c36;--dd-hover-fg:#f0f6fc;--card-bg:#151b23;--card-border:#3d444d;--code-bg:#0d1117;
+  --tab-bg:#010409;--tab-active:#0d1117;--tab-ind:inset 0 -2px #f78166;--dock-ind:#f78166;
+  --seg-bg:#0d1117;--seg-active:#262c36;--btn-active-bg:#262c36;--btn-active-border:#3d444d;
+  --thumb:#3d444d;--thumb-hover:#656c76;--shadow:0 8px 24px rgba(1,4,9,.75);
+  --paper-bg:#0d1117;--paper-line:#3d444d;--paper-border:1px solid #3d444d;--paper-radius:6px;--paper-shadow:none;
+  --switch-off:#3d444d;--modal-bg:#151b23;--overlay:rgba(1,4,9,.7);--ok:#3fb950;--warn:#d29922;--danger:#f85149;
+  color-scheme:dark}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0;overflow:clip}
+body{background:var(--bg);color:var(--text);font:12px/1.4 var(--font-ui);
+  display:grid;grid-template-rows:32px 40px 1fr 24px;user-select:none}
+input,textarea,select{user-select:text}
+button{font:inherit;color:inherit}
+::-webkit-scrollbar{width:12px;height:12px}
+::-webkit-scrollbar-thumb{background:var(--thumb);border:3px solid transparent;background-clip:content-box;border-radius:8px}
+::-webkit-scrollbar-thumb:hover{background-color:var(--thumb-hover)}
+::-webkit-scrollbar-track,::-webkit-scrollbar-corner{background:transparent}
+
+/* Menu bar */
+.menubar{display:flex;align-items:center;background:var(--chrome);border-bottom:1px solid var(--line);position:relative;z-index:50}
+.logo{width:40px;height:32px;display:grid;place-items:center}
+.logo span{width:22px;height:22px;border-radius:5px;background:linear-gradient(135deg,#378ef0,#7b4dff);color:#fff;
+  font-weight:800;font-size:10px;display:grid;place-items:center;letter-spacing:-.02em}
+#menus{display:flex}
+.menu{position:relative}
+.menu>button{background:none;border:0;padding:0 10px;height:32px}
+.menu>button:hover,.menu.open>button{background:var(--hover)}
+.dropdown{display:none;position:absolute;top:32px;left:0;min-width:280px;background:var(--dd-bg);border:1px solid var(--dd-border);
+  border-radius:var(--radius);box-shadow:var(--shadow);padding:4px 0}
+.menu.open .dropdown{display:block}
+.dropdown button{display:grid;grid-template-columns:18px 1fr auto;align-items:center;width:100%;background:none;border:0;
+  padding:5px 16px 5px 8px;text-align:left}
+.dropdown button:hover{background:var(--dd-hover-bg);color:var(--dd-hover-fg)}
+.dropdown kbd{color:var(--dim);font:inherit;padding-left:24px}
+.dropdown button:hover kbd{color:inherit;opacity:.8}
+.dropdown .chk{font-size:11px}
+.dropdown hr{border:0;border-top:1px solid var(--dd-border);margin:4px 0}
+.dropdown .dd-label{padding:6px 16px 2px 26px;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--dim)}
+.apptitle{flex:1;text-align:center;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 12px}
+.cta{margin-right:10px;height:24px;padding:0 16px;border-radius:var(--cta-radius);border:0;background:var(--cta);color:var(--on-accent);font-weight:600}
+.cta:hover{background:var(--cta-hover)}
+
+/* Options bar */
+.optbar{display:flex;align-items:center;gap:2px;padding:0 6px;background:var(--chrome2);border-bottom:1px solid var(--line)}
+.group{display:flex;align-items:center;gap:2px;padding:0 6px;border-right:1px solid var(--border)}
+.group:last-child{border-right:0}
+.spacer,.flex{flex:1}
+.ibtn{height:28px;min-width:28px;padding:0 6px;background:none;border:1px solid transparent;border-radius:var(--radius);
+  display:inline-grid;place-items:center}
+.ibtn:hover{background:var(--hover)}
+.ibtn.active{background:var(--btn-active-bg);border-color:var(--btn-active-border);color:var(--strong)}
+.ibtn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.g{font-size:15px;line-height:1}.serif{font-family:Georgia,"Times New Roman",serif}
+select{background:var(--input-bg);color:var(--text);border:1px solid var(--input-border);border-radius:var(--radius);height:26px;padding:0 6px;font:inherit;outline:0}
+select:focus,input:focus{border-color:var(--accent)}
+.optlabel{color:var(--dim);margin-right:4px}
+.seg{display:inline-flex;border:1px solid var(--input-border);border-radius:var(--radius);overflow:hidden}
+.seg button{background:var(--seg-bg);border:0;border-right:1px solid var(--input-border);padding:0 12px;height:26px}
+.seg button:last-child{border-right:0}
+.seg button:hover{background:var(--hover)}
+.seg button.active{background:var(--seg-active);color:var(--strong);font-weight:600}
+.seg.small button{height:26px;padding:0 14px}
+
+/* Main layout */
+.main{display:grid;grid-template-columns:44px 1fr auto;min-height:0;overflow:clip}
+.tools{background:var(--chrome);border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;padding:6px 0;gap:1px;overflow-y:auto}
+.tools .ibtn{width:34px;height:32px}
+.tools .sep{width:22px;height:1px;background:var(--border);margin:4px 0;flex:none}
+.center{display:flex;flex-direction:column;min-width:0;min-height:0;overflow:clip}
+.tabs{display:flex;height:30px;background:var(--chrome);border-bottom:1px solid var(--line);overflow-x:auto;flex:none}
+.tabs::-webkit-scrollbar{height:0}
+.tab{display:flex;align-items:center;gap:7px;padding:0 6px 0 12px;border-right:1px solid var(--line);color:var(--dim);
+  background:var(--tab-bg);min-width:130px;max-width:230px;cursor:default}
+.tab:hover{color:var(--text)}
+.tab.active{background:var(--tab-active);color:var(--strong);box-shadow:var(--tab-ind)}
+.tab-ico{font-size:9px;font-weight:700;color:var(--accent);border:1px solid currentColor;border-radius:3px;padding:0 3px}
+.tab .name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tab.dirty .name::after{content:" \25CF";color:var(--accent)}
+.tab .x{background:none;border:0;width:20px;height:20px;border-radius:3px;font-size:10px;opacity:0}
+.tab:hover .x,.tab.active .x{opacity:.8}.tab .x:hover{background:var(--hover);opacity:1}
+.tab-new{background:none;border:0;width:30px;font-size:16px;color:var(--dim)}.tab-new:hover{color:var(--strong);background:var(--hover)}
+
+/* Find bar */
+.findbar{display:none;align-items:center;gap:6px;padding:5px 10px;background:var(--chrome2);border-bottom:1px solid var(--line)}
+.findbar.show{display:flex}
+.field-in{background:var(--input-bg);color:var(--text);border:1px solid var(--input-border);border-radius:var(--radius);height:26px;padding:0 8px;font:inherit;outline:0;width:200px}
+.btn-sm{height:26px;padding:0 12px;border-radius:var(--btn-radius);border:1px solid var(--input-border);background:none}
+.btn-sm:hover{background:var(--hover)}
+.btn-sm.primary{background:var(--cta);border-color:var(--cta);color:var(--on-accent);font-weight:600}
+.btn-sm.primary:hover{background:var(--cta-hover)}
+.findbar label{display:flex;align-items:center;gap:4px;color:var(--dim)}
+#fCount{color:var(--dim);min-width:80px}
+
+/* Workspace */
+.workspace{flex:1;display:flex;min-height:0;background:var(--editor-bg);overflow:clip}
+.editor-pane{flex:0 0 50%;display:flex;flex-direction:column;min-width:0}
+.preview-pane{flex:1;display:flex;flex-direction:column;min-width:0}
+.pane-head{height:24px;flex:none;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--dim);padding:0 14px;
+  display:flex;align-items:center;gap:8px;background:var(--pane-head);border-bottom:1px solid var(--line)}
+#editor{flex:1;resize:none;border:0;outline:0;background:var(--editor-bg);color:var(--editor-fg);font-family:Consolas,"Cascadia Code","JetBrains Mono",monospace;
+  font-size:14px;line-height:1.65;padding:20px 26px;tab-size:2;caret-color:var(--accent)}
+#editor::selection{background:var(--selection)}
+#editor::placeholder{color:var(--dim)}
+.splitter{flex:0 0 5px;cursor:col-resize;background:var(--line)}
+.splitter:hover,.splitter.drag{background:var(--accent)}
+.canvas{flex:1;overflow:auto;background:var(--workarea);padding:32px 28px}
+.canvas.darkpaper{background:var(--workarea-dark)}
+#paper{min-height:100%;box-shadow:var(--paper-shadow);border:var(--paper-border);border-radius:var(--paper-radius);user-select:text}
+.workspace.mode-edit .preview-pane,.workspace.mode-edit .splitter,
+.workspace.mode-preview .editor-pane,.workspace.mode-preview .splitter{display:none}
+.workspace.mode-edit .editor-pane{flex:1 1 auto}
+
+/* Start screen (no document open) — same layout as PDF Studio */
+.empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:var(--workarea);padding:24px;text-align:center}
+.empty-state .big-tile{width:112px;height:112px;border-radius:25px;background:linear-gradient(135deg,#378ef0,#7b4dff);display:grid;place-items:center;color:#fff;font-weight:800;font-size:44px;letter-spacing:-.03em;box-shadow:0 12px 32px rgba(55,142,240,.35)}
+.empty-state h1{margin:0;font-size:22px;font-weight:650;color:var(--strong)}
+.empty-state p{margin:0;color:var(--dim);font-size:13px;max-width:520px}
+.empty-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.recent{display:flex;flex-direction:column;gap:2px;min-width:360px;max-width:560px;margin-top:8px;text-align:left}
+.recent .sect{margin-bottom:4px}
+.recent button{display:flex;gap:10px;align-items:center;background:none;border:0;border-radius:var(--radius);padding:7px 10px;text-align:left}
+.recent button:hover{background:var(--hover)}
+.recent small{color:var(--dim);margin-left:auto;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;direction:rtl}
+.ibtn:disabled,.btn-sm:disabled,.cta:disabled,select:disabled{opacity:.35;pointer-events:none}
+.dropdown button:disabled{opacity:.4}.dropdown button:disabled:hover{background:none;color:inherit}
+
+/* Dock */
+.dock{width:330px;background:var(--panel);border-left:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+.dock.hidden{display:none}
+.dock-tabs{display:flex;background:var(--chrome);border-bottom:1px solid var(--line);height:30px;flex:none}
+.dock-tabs button{background:none;border:0;border-bottom:2px solid transparent;color:var(--dim);padding:0 11px;font-weight:600}
+.dock-tabs button:hover{color:var(--text)}
+.dock-tabs button.active{color:var(--strong);border-bottom-color:var(--dock-ind)}
+.dock-body{flex:1;overflow:auto;padding:10px}
+.dpanel{display:none}.dpanel.active{display:block}
+.dtools{display:flex;gap:6px;margin-bottom:10px;position:sticky;top:-10px;background:var(--panel);padding:10px 0 6px;margin-top:-10px;z-index:2}
+.dtools .field-in{flex:1;width:auto}
+.sect{margin:12px 0 8px;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--dim);font-weight:600}
+.empty{color:var(--dim);padding:20px 8px;text-align:center;line-height:1.7}
+.empty code{background:var(--code-bg);padding:1px 5px;border-radius:3px}
+.ol-item{padding:5px 8px;border-radius:var(--radius);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;color:var(--text)}
+.ol-item:hover{background:var(--hover);color:var(--strong)}
+.ol-item[data-level="1"]{font-weight:600;color:var(--strong)}
+.ol-item::before{content:"H" attr(data-level);font-size:9px;color:var(--dim);margin-right:8px;font-weight:600}
+.card{background:var(--card-bg);border:1px solid var(--card-border);border-radius:calc(var(--radius) + 2px);margin-bottom:10px;overflow:hidden}
+.card-h{display:flex;align-items:center;justify-content:space-between;padding:7px 8px 4px 10px;font-weight:600;color:var(--strong)}
+.card-h .btn-sm{height:22px;font-size:11px}
+.card .desc{margin:0 10px 7px;color:var(--dim);line-height:1.5}
+.card .desc code{background:var(--code-bg);padding:0 4px;border-radius:3px;color:var(--text);font-family:Consolas,monospace}
+.card pre.src{margin:0;padding:8px 10px;background:var(--code-bg);font:12px/1.5 Consolas,monospace;white-space:pre-wrap;word-break:break-word;color:var(--editor-fg);user-select:text;border-top:1px solid var(--card-border)}
+.card .out{font-size:13px;padding:10px 14px;background:#fff;max-height:260px;overflow:auto;user-select:text;border-top:1px solid var(--card-border)}
+.card .out.dark{background:#1c1c1c}.card .out.gh.dark{background:#0d1117}
+.card .out h1{font-size:1.6em}.card .out h2{font-size:1.3em}
+.glyphs{display:grid;grid-template-columns:repeat(8,1fr);gap:3px}
+.glyph{height:34px;background:var(--input-bg);border:1px solid var(--card-border);border-radius:var(--radius);color:var(--text);display:grid;place-items:center;font-size:12px;overflow:hidden;padding:0}
+.glyph:hover{border-color:var(--accent);background:var(--hover)}
+.psec{border-bottom:1px solid var(--border);padding:4px 2px 12px;margin-bottom:8px}
+.psec-h{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--dim);font-weight:600;margin:6px 0 8px}
+.kv{display:flex;justify-content:space-between;padding:3px 0}.kv span{color:var(--dim)}.kv b{font-weight:500;color:var(--strong);max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.switch{display:flex;align-items:center;gap:10px;margin:10px 0;cursor:pointer}
+.switch input{display:none}
+.switch span{width:26px;height:14px;border-radius:7px;background:var(--switch-off);position:relative;transition:.15s;flex:none}
+.switch span::after{content:"";position:absolute;left:2px;top:2px;width:10px;height:10px;border-radius:50%;background:#fff;transition:.15s}
+.switch input:checked+span{background:var(--accent2)}
+.switch input:checked+span::after{left:14px}
+input[type=range]{width:100%;max-width:360px;accent-color:var(--accent)}
+
+/* Status bar */
+.status{display:flex;align-items:center;gap:16px;padding:0 10px;background:var(--chrome);border-top:1px solid var(--line);color:var(--dim);font-size:11px;white-space:nowrap;overflow:hidden}
+.st-state::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--ok);margin-right:6px}
+.st-state.dirty::before{background:var(--warn)}
+.zoom{display:flex;align-items:center}
+.zoom button{background:none;border:0;color:var(--dim);height:22px;min-width:22px;border-radius:3px}
+.zoom button:hover{background:var(--hover);color:var(--strong)}
+#zVal{min-width:44px}
+
+/* Overlays */
+.toast{position:fixed;left:50%;bottom:40px;transform:translate(-50%,20px);background:var(--dd-bg);color:var(--strong);padding:8px 16px;border-radius:var(--radius);
+  border:1px solid var(--dd-border);border-left:4px solid var(--accent);box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:.2s;z-index:300}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.modal-bg{position:fixed;inset:0;background:var(--overlay);display:none;place-items:center;z-index:200}
+.modal-bg.show{display:grid}
+.modal{width:min(640px,92vw);max-height:84vh;display:flex;flex-direction:column;background:var(--modal-bg);border:1px solid var(--dd-border);
+  border-radius:calc(var(--radius) + 2px);box-shadow:var(--shadow)}
+.modal.wide{width:min(860px,94vw);height:min(600px,88vh)}
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;font-size:16px;font-weight:600;color:var(--strong);border-bottom:1px solid var(--border)}
+.modal-body{padding:16px 20px;overflow:auto;line-height:1.6;flex:1;min-height:0}
+.modal.wide .modal-body{padding:0;overflow:hidden}
+.modal-body table{width:100%;border-collapse:collapse}
+.modal-body td{padding:4px 6px;border-bottom:1px solid var(--border)}
+.modal-body td:last-child{text-align:right}
+.modal-body kbd{background:var(--code-bg);border:1px solid var(--input-border);border-radius:3px;padding:1px 6px;font:11px Consolas,monospace}
+.modal-body h4{margin:16px 0 6px;color:var(--dim);font-size:11px;text-transform:uppercase;letter-spacing:.08em}
+.modal-body a{color:var(--accent)}
+.modal-foot{display:flex;align-items:center;gap:8px;padding:12px 18px;border-top:1px solid var(--border)}
+.modal-foot[hidden]{display:none}
+
+/* Settings dialog */
+.prefs{display:grid;grid-template-columns:180px 1fr;height:100%}
+.prefs nav{border-right:1px solid var(--border);padding:12px 8px;background:var(--panel)}
+.prefs nav button{display:block;width:100%;text-align:left;background:none;border:0;padding:8px 12px;border-radius:var(--radius);margin-bottom:2px}
+.prefs nav button:hover{background:var(--hover)}
+.prefs nav button.active{background:var(--dd-hover-bg);color:var(--dd-hover-fg);font-weight:600}
+.prefs section{padding:4px 26px 24px;overflow:auto}
+.prefs h3{font-size:12px;font-weight:600;color:var(--strong);margin:20px 0 8px;display:flex;justify-content:space-between;max-width:360px}
+.prefs h3 .val{color:var(--dim);font-weight:400}
+.prefs .hint{color:var(--dim);margin:-2px 0 10px}
+.wide-sel{width:280px}
+.theme-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;max-width:560px}
+.theme-card{padding:0;border:2px solid var(--border);border-radius:8px;overflow:hidden;background:var(--card-bg);text-align:left;cursor:pointer}
+.theme-card:hover{border-color:var(--dim)}
+.theme-card.active{border-color:var(--accent)}
+.theme-name{display:flex;justify-content:space-between;padding:8px 12px;font-weight:600;color:var(--strong)}
+.theme-name span{color:var(--accent)}
+.tc-mock{height:112px;display:grid;grid-template-rows:16px 1fr;background:var(--bg);pointer-events:none}
+.tc-bar{background:var(--chrome);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:5px;padding:0 7px}
+.tc-bar i{width:16px;height:4px;border-radius:2px;background:var(--dim);opacity:.7}
+.tc-bar b{margin-left:auto;width:22px;height:8px;border-radius:4px;background:var(--cta)}
+.tc-body{display:grid;grid-template-columns:14px 1fr 1fr 38px;min-height:0}
+.tc-rail{background:var(--chrome);border-right:1px solid var(--line)}
+.tc-ed{background:var(--editor-bg);padding:8px 7px}
+.tc-ed i,.tc-paper i{display:block;height:3px;border-radius:2px;margin:5px 0}
+.tc-ed i{background:var(--dim);opacity:.55}
+.tc-pv{background:var(--workarea);padding:7px 7px 0}
+.tc-paper{background:var(--paper-bg);height:100%;border-radius:2px 2px 0 0;padding:6px;border:var(--paper-border);border-bottom:0}
+.tc-paper i{background:var(--paper-line)}
+.tc-paper i:first-child{height:5px;width:60%;background:var(--accent)}
+.tc-dock{background:var(--panel);border-left:1px solid var(--line)}
+
+.drop{position:fixed;inset:10px;border:2px dashed var(--accent);border-radius:10px;background:rgba(20,40,70,.75);display:none;place-items:center;
+  font-size:20px;color:#fff;z-index:250;pointer-events:none}
+.drop.show{display:grid}
+.libfail{position:fixed;top:80px;left:50%;transform:translateX(-50%);background:var(--danger);color:#fff;padding:10px 18px;border-radius:4px;z-index:400}
+
+@media print{
+  html,body{height:auto;overflow:visible;display:block;background:#fff}
+  .menubar,.optbar,.tools,.tabs,.findbar,.dock,.status,.editor-pane,.splitter,.pane-head,.toast,.modal-bg,.drop{display:none!important}
+  .main,.center,.workspace,.preview-pane,.canvas{display:block!important;overflow:visible!important;background:#fff!important;padding:0!important;height:auto}
+  #paper{box-shadow:none;border:0;max-width:none;padding:0;zoom:1!important}
+}
+</style>
+</head>
+<body>
+
+<header class="menubar">
+  <div class="logo"><span>Md</span></div>
+  <nav id="menus"></nav>
+  <div class="apptitle" id="apptitle">Markdown Studio</div>
+  <button class="cta" data-act="exportHtml" data-i18n="ui.export">Export</button>
+</header>
+
+<div class="optbar">
+  <div class="group" id="fileBtns"></div>
+  <div class="group">
+    <span class="optlabel" data-i18n="ui.style">Style</span>
+    <select id="styleSel"></select>
+  </div>
+  <div class="spacer"></div>
+  <div class="group"><div class="seg" id="viewSeg"></div></div>
+  <div class="group" id="viewBtns"></div>
+</div>
+
+<div class="main">
+  <aside class="tools" id="tools"></aside>
+  <section class="center">
+    <div class="tabs" id="tabs"></div>
+    <div class="findbar" id="findbar">
+      <input class="field-in" id="findIn" data-i18n-ph="ui.find" spellcheck="false">
+      <input class="field-in" id="replIn" data-i18n-ph="ui.replaceWith" spellcheck="false">
+      <label><input type="checkbox" id="findCase"> <span data-i18n="ui.matchCase"></span></label>
+      <button class="btn-sm" id="fPrev" data-i18n-title="ui.prev">&#8593;</button>
+      <button class="btn-sm" id="fNext" data-i18n-title="ui.next">&#8595;</button>
+      <button class="btn-sm" id="fRepl" data-i18n="ui.replace"></button>
+      <button class="btn-sm" id="fAll" data-i18n="ui.replaceAll"></button>
+      <span id="fCount"></span>
+      <span class="flex"></span>
+      <button class="ibtn" id="fClose" data-i18n-title="ui.closeEsc">&#10005;</button>
+    </div>
+    <div class="workspace" id="workspace">
+      <div class="editor-pane" id="edPane">
+        <div class="pane-head" data-i18n="ui.source"></div>
+        <textarea id="editor" spellcheck="false" data-i18n-ph="ui.placeholder"></textarea>
+      </div>
+      <div class="splitter" id="splitter"></div>
+      <div class="preview-pane">
+        <div class="pane-head" data-i18n="ui.preview"></div>
+        <div class="canvas" id="canvas"><article class="paper md" id="paper"></article></div>
+      </div>
+    </div>
+    <div class="empty-state" id="emptyState" hidden>
+      <div class="big-tile">Md</div>
+      <h1 data-i18n="ui.emptyTitle"></h1>
+      <p data-i18n="ui.emptyHint"></p>
+      <div class="empty-actions">
+        <button class="btn-sm primary" data-act="newDoc" data-i18n="ui.newDocTip"></button>
+        <button class="btn-sm" data-act="openFile" data-i18n="a.openFile"></button>
+        <button class="btn-sm" data-act="openGuide" data-i18n="a.openGuide"></button>
+      </div>
+      <div class="recent" id="recent"></div>
+    </div>
+  </section>
+  <aside class="dock" id="dock">
+    <div class="dock-tabs" id="dockTabs">
+      <button data-tab="outline" data-i18n="ui.outline"></button>
+      <button data-tab="md">Markdown</button>
+      <button data-tab="latex">LaTeX</button>
+      <button data-tab="props" data-i18n="ui.properties"></button>
+    </div>
+    <div class="dock-body">
+      <div class="dpanel" data-panel="outline"><div id="outline"></div></div>
+      <div class="dpanel" data-panel="md">
+        <div class="dtools"><input class="field-in" data-filter="md" data-i18n-ph="ui.searchMd"><button class="btn-sm" data-act="openGuide" data-i18n="ui.fullGuide"></button></div>
+        <div id="mdCards"></div>
+        <div class="sect" data-i18n="ui.diagrams"></div>
+        <div id="dgCards"></div>
+      </div>
+      <div class="dpanel" data-panel="latex">
+        <div class="dtools"><input class="field-in" data-filter="latex" data-i18n-ph="ui.searchLatex"><button class="btn-sm" data-act="openGuide" data-i18n="ui.fullGuide"></button></div>
+        <div class="sect" data-i18n="ui.symbols"></div>
+        <div class="glyphs" id="glyphs"></div>
+        <div class="sect">Syntax</div>
+        <div id="latexCards"></div>
+      </div>
+      <div class="dpanel" data-panel="props">
+        <div class="psec">
+          <div class="psec-h" data-i18n="ui.document"></div>
+          <div class="kv"><span data-i18n="ui.name"></span><b id="pName"></b></div>
+          <div class="kv"><span data-i18n="ui.words"></span><b id="pWords"></b></div>
+          <div class="kv"><span data-i18n="ui.chars"></span><b id="pChars"></b></div>
+          <div class="kv"><span data-i18n="ui.lines"></span><b id="pLines"></b></div>
+          <div class="kv"><span data-i18n="ui.headings"></span><b id="pHeads"></b></div>
+          <div class="kv"><span data-i18n="ui.math"></span><b id="pMath"></b></div>
+          <div class="kv"><span data-i18n="ui.diagramCount"></span><b id="pDiagrams"></b></div>
+          <div class="kv"><span data-i18n="ui.codeBlocks"></span><b id="pCode"></b></div>
+          <div class="kv"><span data-i18n="ui.linksImages"></span><b id="pLinks"></b></div>
+          <div class="kv"><span data-i18n="ui.readingTime"></span><b id="pRead"></b></div>
+        </div>
+        <button class="btn-sm" data-act="settings" data-i18n="ui.openSettings"></button>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<footer class="status">
+  <span id="stState" class="st-state"></span>
+  <span id="stPos"></span>
+  <span class="flex"></span>
+  <span id="stWords"></span><span id="stChars"></span><span id="stRead"></span>
+  <span>UTF-8 · Markdown + LaTeX</span>
+  <span class="zoom"><button id="zOut" data-i18n-title="a.zoomOut">&minus;</button><button id="zVal" data-i18n-title="a.zoomReset">100%</button><button id="zIn" data-i18n-title="a.zoomIn">+</button></span>
+</footer>
+
+<div class="toast" id="toast"></div>
+<div class="modal-bg" id="modal"><div class="modal">
+  <div class="modal-head"><span id="modalTitle"></span><button class="ibtn" id="modalClose">&#10005;</button></div>
+  <div class="modal-body" id="modalBody"></div>
+  <div class="modal-foot" id="modalFoot" hidden></div>
+</div></div>
+<div class="drop" id="drop" data-i18n="ui.drop"></div>
+<input type="file" id="fileIn" accept=".md,.markdown,.mdown,.mkd,.txt" multiple hidden>
+
+<!-- ============ Content: welcome documents ============ -->
+<script type="text/plain" id="welcome-en">
+# Welcome to Markdown Studio
+
+A focused **Markdown** editor with a live preview and **LaTeX** math typesetting.
+
+## Quick start
+
+- Type on the left, see the result on the right.
+- Use the **tool rail** on the far left or the **Insert** menu to add elements.
+- Open the **Markdown** and **LaTeX** panels on the right for a searchable reference. Click **Insert** on any example.
+- Press **F1** to open the complete syntax guide as a document.
+- Change the language and theme under **Settings**.
+
+## Math, inline and display
+
+Euler's identity $e^{i\pi} + 1 = 0$ links five fundamental constants.
+
+$$
+\int_{-\infty}^{\infty} e^{-x^2}\,dx = \sqrt{\pi}
+$$
+
+$$
+\begin{aligned}
+\nabla \cdot \vec{E} &= \frac{\rho}{\varepsilon_0} \\
+\nabla \times \vec{B} &= \mu_0 \vec{J} + \mu_0 \varepsilon_0 \frac{\partial \vec{E}}{\partial t}
+\end{aligned}
+$$
+
+## Tables, tasks and code
+
+| Feature      | Shortcut        |
+|:-------------|:---------------:|
+| Bold         | <kbd>Ctrl+B</kbd> |
+| Inline math  | <kbd>Ctrl+M</kbd> |
+| Find         | <kbd>Ctrl+F</kbd> |
+
+- [x] Live preview
+- [x] LaTeX via KaTeX
+- [ ] Write something great
+
+## Diagrams
+
+Write a `mermaid` code block (Insert → Diagram) and it is drawn live. Hover it to save as SVG or PNG.
+
+```mermaid
+flowchart LR
+  A[Write] --> B(Preview)
+  B --> C{Happy?}
+  C -->|Yes| D[Export]
+  C -->|No| A
+```
+
+```python
+def fib(n):
+    a, b = 0, 1
+    for _ in range(n):
+        a, b = b, a + b
+    return a
+```
+
+> Your documents are autosaved in the app. Use **File → Save** (Ctrl+S) to write a real `.md` file to disk.
+</script>
+
+<script type="text/plain" id="welcome-de">
+# Willkommen bei Markdown Studio
+
+Ein fokussierter **Markdown**-Editor mit Live-Vorschau und **LaTeX**-Formelsatz.
+
+## Schnellstart
+
+- Links schreiben, rechts das Ergebnis sehen.
+- Über die **Werkzeugleiste** ganz links oder das Menü **Einfügen** fügst du Elemente hinzu.
+- Die Bedienfelder **Markdown** und **LaTeX** rechts sind eine durchsuchbare Referenz. Klicke bei einem Beispiel auf **Einfügen**.
+- Mit **F1** öffnest du die vollständige Syntax-Anleitung als Dokument.
+- Sprache und Design änderst du unter **Einstellungen**.
+
+## Formeln im Text und abgesetzt
+
+Die Eulersche Identität $e^{i\pi} + 1 = 0$ verbindet fünf grundlegende Konstanten.
+
+$$
+\int_{-\infty}^{\infty} e^{-x^2}\,dx = \sqrt{\pi}
+$$
+
+$$
+\begin{aligned}
+\nabla \cdot \vec{E} &= \frac{\rho}{\varepsilon_0} \\
+\nabla \times \vec{B} &= \mu_0 \vec{J} + \mu_0 \varepsilon_0 \frac{\partial \vec{E}}{\partial t}
+\end{aligned}
+$$
+
+## Tabellen, Aufgaben und Code
+
+| Funktion       | Tastenkürzel      |
+|:---------------|:-----------------:|
+| Fett           | <kbd>Strg+B</kbd> |
+| Inline-Formel  | <kbd>Strg+M</kbd> |
+| Suchen         | <kbd>Strg+F</kbd> |
+
+- [x] Live-Vorschau
+- [x] LaTeX mit KaTeX
+- [ ] Etwas Großartiges schreiben
+
+## Diagramme
+
+Schreibe einen `mermaid`-Codeblock (Einfügen → Diagramm), und er wird live gezeichnet. Fahre darüber, um ihn als SVG oder PNG zu speichern.
+
+```mermaid
+flowchart LR
+  A[Schreiben] --> B(Vorschau)
+  B --> C{Zufrieden?}
+  C -->|Ja| D[Exportieren]
+  C -->|Nein| A
+```
+
+```python
+def fib(n):
+    a, b = 0, 1
+    for _ in range(n):
+        a, b = b, a + b
+    return a
+```
+
+> Deine Dokumente werden automatisch in der App gesichert. Mit **Datei → Speichern** (Strg+S) schreibst du eine echte `.md`-Datei auf die Festplatte.
+</script>
+
+<!-- ============ Content: Markdown reference ============
+     "@@ Title | description" starts an entry, an optional "@de Titel | Beschreibung" line follows. -->
+<script type="text/plain" id="ref-md">
+@@ Headings | Start a line with 1–6 `#` characters and a space. More `#` means a smaller heading.
+@de Überschriften | Beginne eine Zeile mit 1–6 `#`-Zeichen und einem Leerzeichen. Mehr `#` ergeben eine kleinere Überschrift.
+# Heading 1
+## Heading 2
+### Heading 3
+@@ Alternate headings | Underline a line with `===` (level 1) or `---` (level 2).
+@de Alternative Überschriften | Unterstreiche eine Zeile mit `===` (Ebene 1) oder `---` (Ebene 2).
+Big title
+=========
+@@ Paragraphs | Separate paragraphs with a blank line. Single line breaks are joined into one paragraph.
+@de Absätze | Trenne Absätze durch eine Leerzeile. Einfache Zeilenumbrüche werden zu einem Absatz zusammengefügt.
+First paragraph.
+
+Second paragraph.
+@@ Line breaks | End a line with a backslash (or two spaces) to force a line break.
+@de Zeilenumbrüche | Beende eine Zeile mit einem Backslash (oder zwei Leerzeichen), um einen Zeilenumbruch zu erzwingen.
+Roses are red,\
+violets are blue.
+@@ Bold and italic | One `*` or `_` for italic, two for bold, three for both.
+@de Fett und kursiv | Ein `*` oder `_` für kursiv, zwei für fett, drei für beides.
+**bold**, *italic*, ***bold italic***, __also bold__, _also italic_
+@@ Strikethrough | Wrap text in double tildes.
+@de Durchgestrichen | Text in doppelte Tilden einschließen.
+~~no longer true~~
+@@ Inline code | Wrap with backticks. Use double backticks if the code itself contains a backtick.
+@de Inline-Code | Mit Backticks umschließen. Doppelte Backticks verwenden, wenn der Code selbst einen Backtick enthält.
+Run `npm install` or ``echo `date` ``
+@@ Code block | Fence with three backticks. Add a language name for syntax highlighting.
+@de Codeblock | Mit drei Backticks einzäunen. Ein Sprachname aktiviert die Syntaxhervorhebung.
+```python
+def greet(name):
+    return f"Hello, {name}!"
+```
+@@ Indented code | Indent every line by 4 spaces for a plain code block.
+@de Eingerückter Code | Jede Zeile um 4 Leerzeichen einrücken ergibt einen einfachen Codeblock.
+    plain code block
+    no highlighting
+@@ Links | Inline links with an optional title, autolinks in angle brackets, and bare URLs.
+@de Links | Inline-Links mit optionalem Titel, Autolinks in spitzen Klammern und einfache URLs.
+[Anthropic](https://www.anthropic.com "Optional title")
+<https://example.com> and https://example.org
+@@ Reference links | Define a URL once at the bottom and reuse it by label.
+@de Referenz-Links | Die URL einmal am Ende definieren und über ihr Label wiederverwenden.
+Read the [spec][cm] or the [tutorial][cm].
+
+[cm]: https://commonmark.org
+@@ Internal links | Link to a heading with `#` and its lowercase, dash-separated name.
+@de Interne Links | Mit `#` und dem kleingeschriebenen, durch Bindestriche verbundenen Namen auf eine Überschrift verlinken.
+Jump to [the quick start](#quick-start).
+@@ Images | Like a link, prefixed with `!`. The bracket text is the alt text.
+@de Bilder | Wie ein Link, mit vorangestelltem `!`. Der Text in eckigen Klammern ist der Alternativtext.
+![Placeholder](https://placehold.co/240x80/378ef0/ffffff?text=Image)
+@@ Bulleted list | Start lines with `-`, `*` or `+`. Indent 2 spaces to nest.
+@de Aufzählung | Zeilen mit `-`, `*` oder `+` beginnen. Zum Verschachteln 2 Leerzeichen einrücken.
+- Fruit
+  - Apples
+  - Pears
+- Vegetables
+@@ Numbered list | Start lines with a number and a period. The first number sets the start.
+@de Nummerierte Liste | Zeilen mit einer Zahl und einem Punkt beginnen. Die erste Zahl legt den Start fest.
+1. First
+2. Second
+3. Third
+@@ Task list | Checkboxes: `[ ]` open, `[x]` done.
+@de Aufgabenliste | Kontrollkästchen: `[ ]` offen, `[x]` erledigt.
+- [x] Write draft
+- [ ] Proofread
+@@ Blockquote | Start lines with `>`. Nest with `>>`.
+@de Zitat | Zeilen mit `>` beginnen. Mit `>>` verschachteln.
+> Simplicity is the ultimate sophistication.
+>
+> > A nested quote
+@@ Table | Pipes separate columns. Colons in the divider row set alignment: left, center, right.
+@de Tabelle | Senkrechte Striche trennen Spalten. Doppelpunkte in der Trennzeile legen die Ausrichtung fest: links, zentriert, rechts.
+| Left | Center | Right |
+|:-----|:------:|------:|
+| a    |   b    |     c |
+| 10   |   20   |    30 |
+@@ Horizontal rule | Three or more `-`, `*` or `_` on their own line.
+@de Trennlinie | Drei oder mehr `-`, `*` oder `_` in einer eigenen Zeile.
+---
+@@ Escaping | A backslash shows the next character literally.
+@de Maskieren | Ein Backslash zeigt das nächste Zeichen wörtlich an.
+\*not italic\*, \# not a heading, \$ not math
+@@ HTML | Inline HTML is allowed. Scripts are stripped for safety.
+@de HTML | Inline-HTML ist erlaubt. Skripte werden aus Sicherheitsgründen entfernt.
+Press <kbd>Ctrl</kbd> + <kbd>S</kbd>. H<sub>2</sub>O, x<sup>2</sup>, <mark>highlighted</mark>
+
+<details><summary>Click to expand</summary>Hidden content</details>
+@@ Comments | HTML comments are hidden in the preview.
+@de Kommentare | HTML-Kommentare werden in der Vorschau ausgeblendet.
+Visible text <!-- invisible note -->
+</script>
+
+<!-- ============ Content: LaTeX reference ============ -->
+<script type="text/plain" id="ref-latex">
+@@ Inline math | Wrap in single dollar signs. Don't put a space right inside the `$`.
+@de Inline-Formeln | In einfache Dollarzeichen einschließen. Kein Leerzeichen direkt innerhalb der `$`.
+The area is $A = \pi r^2$.
+@@ Display math | Put double dollar signs on their own lines for a centered equation.
+@de Abgesetzte Formeln | Doppelte Dollarzeichen in eigenen Zeilen ergeben eine zentrierte Gleichung.
+$$
+\int_0^\infty e^{-x}\,dx = 1
+$$
+@@ Math code block | A fenced block with the language `math` also renders as display math.
+@de Formel-Codeblock | Ein eingezäunter Block mit der Sprache `math` wird ebenfalls als abgesetzte Formel dargestellt.
+```math
+\nabla \cdot \vec{E} = \frac{\rho}{\varepsilon_0}
+```
+@@ Superscripts and subscripts | `^` raises and `_` lowers. Use braces for more than one character.
+@de Hoch- und Tiefstellung | `^` stellt hoch, `_` stellt tief. Bei mehr als einem Zeichen geschweifte Klammern verwenden.
+$x^2,\; x_i,\; x_{i,j}^{n+1},\; e^{-i\omega t}$
+@@ Fractions | `\frac`, display-size `\dfrac`, text-size `\tfrac`, and binomials.
+@de Brüche | `\frac`, groß `\dfrac`, klein `\tfrac` und Binomialkoeffizienten.
+$\frac{a}{b},\; \dfrac{1}{2},\; \tfrac{3}{4},\; \binom{n}{k}$
+@@ Roots | Square roots and n-th roots.
+@de Wurzeln | Quadratwurzeln und n-te Wurzeln.
+$\sqrt{x},\; \sqrt[3]{x+1}$
+@@ Greek letters | Lowercase like `\alpha`, uppercase like `\Gamma`. Variants: `\varepsilon`, `\varphi`.
+@de Griechische Buchstaben | Klein wie `\alpha`, groß wie `\Gamma`. Varianten: `\varepsilon`, `\varphi`.
+$\alpha\ \beta\ \gamma\ \delta\ \epsilon\ \theta\ \lambda\ \mu\ \pi\ \rho\ \sigma\ \phi\ \omega\ \Gamma\ \Delta\ \Theta\ \Lambda\ \Sigma\ \Phi\ \Omega$
+@@ Sums, products, integrals | Limits go in `_` (below) and `^` (above).
+@de Summen, Produkte, Integrale | Grenzen stehen in `_` (unten) und `^` (oben).
+$$
+\sum_{i=1}^{n} i = \frac{n(n+1)}{2} \qquad \prod_{k=1}^{n} k = n! \qquad \iint_D f\,dA \qquad \oint_C \vec F \cdot d\vec r
+$$
+@@ Limits and derivatives | Use `\lim`, `\to`, and `\partial` for partial derivatives.
+@de Grenzwerte und Ableitungen | `\lim`, `\to` und `\partial` für partielle Ableitungen verwenden.
+$$
+\lim_{x \to 0} \frac{\sin x}{x} = 1 \qquad \frac{dy}{dx} \qquad \frac{\partial f}{\partial x} \qquad f'(x),\ f''(x)
+$$
+@@ Relations | Comparison and equivalence symbols.
+@de Relationen | Vergleichs- und Äquivalenzzeichen.
+$a \le b,\ a \ge b,\ a \ne b,\ a \approx b,\ a \equiv b,\ a \sim b,\ a \propto b,\ a \ll b$
+@@ Operators | Binary operators.
+@de Operatoren | Binäre Operatoren.
+$\pm\ \mp\ \times\ \div\ \cdot\ \circ\ \ast\ \oplus\ \otimes$
+@@ Sets and logic | Set membership, subsets, quantifiers, and connectives.
+@de Mengen und Logik | Elementbeziehung, Teilmengen, Quantoren und Junktoren.
+$x \in A,\ y \notin B,\ A \subset B,\ A \subseteq B,\ A \cup B,\ A \cap B,\ \emptyset,\ \forall x\ \exists y,\ \neg p \land q \lor r$
+@@ Arrows | Single, double, and mapping arrows.
+@de Pfeile | Einfache, doppelte und Abbildungspfeile.
+$\to\ \leftarrow\ \leftrightarrow\ \Rightarrow\ \Leftarrow\ \Leftrightarrow\ \mapsto\ \implies\ \iff\ \uparrow\ \downarrow$
+@@ Brackets | `\left` and `\right` make brackets grow with their content.
+@de Klammern | `\left` und `\right` lassen Klammern mit ihrem Inhalt mitwachsen.
+$\left( \frac{a}{b} \right),\ \left[ x \right],\ \left\{ y \right\},\ |x|,\ \|v\|,\ \langle u, v \rangle,\ \lfloor x \rfloor,\ \lceil x \rceil$
+@@ Accents | Hats, bars, vectors, and dots.
+@de Akzente | Dächer, Striche, Vektorpfeile und Punkte.
+$\hat{x},\ \bar{x},\ \vec{v},\ \dot{x},\ \ddot{x},\ \tilde{x},\ \overline{AB},\ \underline{x},\ \widehat{xyz}$
+@@ Fonts | Blackboard bold, calligraphic, bold, upright, and plain text.
+@de Schriftarten | Doppelstrich, kalligrafisch, fett, aufrecht und normaler Text.
+$\mathbb{R},\ \mathcal{L},\ \mathbf{v},\ \boldsymbol{\alpha},\ \mathrm{d}x,\ \mathfrak{g},\ \mathsf{A},\ \mathtt{code},\ \text{plain text}$
+@@ Functions | Use `\sin`, `\log`, etc. so names are set upright. Use `\operatorname` for custom ones.
+@de Funktionen | `\sin`, `\log` usw. verwenden, damit Namen aufrecht gesetzt werden. `\operatorname` für eigene.
+$\sin x,\ \cos x,\ \tan x,\ \ln x,\ \log_2 n,\ \exp(x),\ \max_i a_i,\ \operatorname{argmax}_x f(x)$
+@@ Matrices | Rows end with `\\` and columns are separated by `&`.
+@de Matrizen | Zeilen enden mit `\\`, Spalten werden durch `&` getrennt.
+$$
+\begin{pmatrix} a & b \\ c & d \end{pmatrix}
+\quad
+\begin{bmatrix} 1 & 0 \\ 0 & 1 \end{bmatrix}
+\quad
+\begin{vmatrix} x & y \\ z & w \end{vmatrix}
+$$
+@@ Aligned equations | `&` marks the alignment point and `\\` starts a new line.
+@de Ausgerichtete Gleichungen | `&` markiert den Ausrichtungspunkt, `\\` beginnt eine neue Zeile.
+$$
+\begin{aligned}
+f(x) &= (x+1)^2 \\
+     &= x^2 + 2x + 1
+\end{aligned}
+$$
+@@ Cases | Piecewise definitions.
+@de Fallunterscheidungen | Stückweise Definitionen.
+$$
+|x| = \begin{cases} x & \text{if } x \ge 0 \\ -x & \text{if } x < 0 \end{cases}
+$$
+@@ Spacing | Math mode ignores normal spaces. Use these instead (thin → widest).
+@de Abstände | Im Formelmodus werden normale Leerzeichen ignoriert. Stattdessen diese verwenden (schmal → am breitesten).
+$a\,b\;c\quad d\qquad e$
+@@ Colors | Color parts of a formula.
+@de Farben | Teile einer Formel einfärben.
+$\textcolor{#378ef0}{\text{blue}} \quad \textcolor{#d7373f}{\text{red}} \quad \colorbox{#fff3a3}{boxed}$
+@@ Boxes and braces | Highlight results and annotate terms.
+@de Rahmen und Klammern | Ergebnisse hervorheben und Terme beschriften.
+$$
+\boxed{E = mc^2} \qquad \underbrace{a+b+c}_{\text{sum}} \qquad \overbrace{x+y}^{2}
+$$
+@@ Macros | Built in: `\R \N \Z \Q \C`. Define your own with `\def`.
+@de Makros | Eingebaut: `\R \N \Z \Q \C`. Eigene mit `\def` definieren.
+$$
+\def\avg#1{\langle #1 \rangle}
+\R,\ \N,\ \Z,\ \Q,\ \C,\ \avg{x}
+$$
+@@ Literal dollar sign | Escape with a backslash. Amounts like \$5 stay plain text when no closing `$` follows.
+@de Dollarzeichen | Mit einem Backslash maskieren. Beträge wie \$5 bleiben normaler Text, wenn kein schließendes `$` folgt.
+That costs \$20, and $30 too.
+</script>
+
+<!-- ============ Content: diagram reference (Mermaid) ============ -->
+<script type="text/plain" id="ref-diagram">
+@@ Flowchart | Boxes and arrows. `LR` runs left to right, `TD` top down. `[ ]` box, `( )` rounded, `{ }` decision, `-->|text|` labelled arrow.
+@de Flussdiagramm | Kästen und Pfeile. `LR` läuft von links nach rechts, `TD` von oben nach unten. `[ ]` Kasten, `( )` abgerundet, `{ }` Entscheidung, `-->|Text|` beschrifteter Pfeil.
+```mermaid
+flowchart LR
+  A[Write] --> B(Preview)
+  B --> C{Happy?}
+  C -->|Yes| D[Export]
+  C -->|No| A
+```
+@@ Sequence diagram | Messages between participants over time. `->>` solid arrow, `-->>` dashed reply.
+@de Sequenzdiagramm | Nachrichten zwischen Beteiligten im zeitlichen Ablauf. `->>` durchgezogener Pfeil, `-->>` gestrichelte Antwort.
+```mermaid
+sequenceDiagram
+  participant U as User
+  participant A as App
+  U->>A: Open file
+  A-->>U: Show preview
+  U->>A: Save
+```
+@@ Class diagram | Classes with fields and methods, and the relations between them.
+@de Klassendiagramm | Klassen mit Feldern und Methoden sowie ihre Beziehungen.
+```mermaid
+classDiagram
+  class Document {
+    +String name
+    +save()
+  }
+  class Tab
+  Tab --> Document : shows
+```
+@@ State diagram | States and the transitions between them. `[*]` is start or end.
+@de Zustandsdiagramm | Zustände und die Übergänge dazwischen. `[*]` ist Start oder Ende.
+```mermaid
+stateDiagram-v2
+  [*] --> Clean
+  Clean --> Dirty : edit
+  Dirty --> Clean : save
+```
+@@ Gantt chart | A project plan with tasks, durations and dependencies.
+@de Gantt-Diagramm | Ein Projektplan mit Aufgaben, Dauer und Abhängigkeiten.
+```mermaid
+gantt
+  dateFormat YYYY-MM-DD
+  section App
+  Design  :a1, 2026-10-01, 7d
+  Build   :a2, after a1, 14d
+  Release :milestone, after a2, 0d
+```
+@@ Pie chart | Shares of a whole. Each line is a label and a value.
+@de Kreisdiagramm | Anteile an einem Ganzen. Jede Zeile ist eine Beschriftung und ein Wert.
+```mermaid
+pie title Time spent
+  "Writing" : 55
+  "Editing" : 30
+  "Formatting" : 15
+```
+@@ Mind map | Ideas branching from a central topic. Indentation sets the level.
+@de Mindmap | Ideen, die von einem zentralen Thema abzweigen. Die Einrückung bestimmt die Ebene.
+```mermaid
+mindmap
+  root((Studio))
+    Markdown
+      LaTeX
+      Diagrams
+    PDF
+    Data
+```
+@@ Timeline | Events in order. Several events can share one period.
+@de Zeitstrahl | Ereignisse in Reihenfolge. Mehrere Ereignisse können sich einen Zeitraum teilen.
+```mermaid
+timeline
+  September : Idea
+  October : Markdown Studio
+          : Diagrams
+  November : PDF Studio
+```
+</script>
+
+<script src="native.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

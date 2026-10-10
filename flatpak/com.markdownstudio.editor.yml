@@ -1,0 +1,33 @@
+# Flatpak manifest. Repackages the Linux .deb produced by `tauri build`
+# (the CI copies it to flatpak/markdown-studio.deb before running flatpak-builder).
+id: com.markdownstudio.editor
+runtime: org.gnome.Platform
+runtime-version: '48'
+sdk: org.gnome.Sdk
+command: markdown-studio
+finish-args:
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --device=dri
+  - --share=ipc
+  - --share=network          # remote images in documents
+  - --filesystem=home        # open/save dialogs outside the portal
+modules:
+  - name: markdown-studio
+    buildsystem: simple
+    sources:
+      - type: file
+        path: markdown-studio.deb
+    build-commands:
+      - ar -x markdown-studio.deb
+      - tar -xf data.tar.*
+      - install -Dm755 usr/bin/markdown-studio /app/bin/markdown-studio
+      - |
+        desktop=$(ls usr/share/applications/*.desktop | head -n1)
+        sed -e 's/^Icon=.*/Icon=com.markdownstudio.editor/' "$desktop" > com.markdownstudio.editor.desktop
+        install -Dm644 com.markdownstudio.editor.desktop /app/share/applications/com.markdownstudio.editor.desktop
+      - |
+        for dir in usr/share/icons/hicolor/*/apps; do
+          size=$(basename "$(dirname "$dir")")
+          install -Dm644 "$dir/markdown-studio.png" "/app/share/icons/hicolor/$size/apps/com.markdownstudio.editor.png"
+        done
