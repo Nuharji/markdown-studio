@@ -1,5 +1,5 @@
 # Flatpak manifest. Repackages the Linux .deb produced by `tauri build`
-# (the CI copies it to flatpak/markdown-studio.deb before running flatpak-builder).
+# (the release workflow copies it to flatpak/app.deb before running flatpak-builder).
 id: com.markdownstudio.editor
 runtime: org.gnome.Platform
 runtime-version: '48'
@@ -10,16 +10,16 @@ finish-args:
   - --socket=fallback-x11
   - --device=dri
   - --share=ipc
-  - --share=network          # remote images in documents
-  - --filesystem=home        # open/save dialogs outside the portal
+  - --share=network
+  - --filesystem=home
 modules:
   - name: markdown-studio
     buildsystem: simple
     sources:
       - type: file
-        path: markdown-studio.deb
+        path: app.deb
     build-commands:
-      - ar -x markdown-studio.deb
+      - ar -x app.deb
       - tar -xf data.tar.*
       - install -Dm755 usr/bin/markdown-studio /app/bin/markdown-studio
       - |

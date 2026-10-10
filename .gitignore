@@ -5,3 +5,4 @@ src-tauri/icons/
 flatpak/*.deb
 .flatpak-builder/
 build.log
+flatpak/app.deb
