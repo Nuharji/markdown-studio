@@ -130,8 +130,54 @@ async fn save_file(
     }))
 }
 
+/// Escapes text for HTML (content and attribute values).
+fn esc(s: &str) -> String {
+    s.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;").replace('"', "&quot;").replace('\x27', "&#39;")
+}
+
+/// What the HTML export needs from the preview: the rendered body, its stylesheet and the look.
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct Page {
+    title: String,
+    lang: String,
+    body: String,
+    css: String,
+    paper_class: String,
+    page_width: u32,
+    dark: bool,
+    github: bool,
+}
+
+const KATEX_CSS: &str = "https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css";
+const HLJS_CSS: &str = "https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.10.0/build/styles/";
+
+/// A standalone HTML page that looks like the preview (math and code styles from the CDN, prints without the frame).
+fn html_page(p: &Page) -> String {
+    let hl = format!("{HLJS_CSS}{}", if p.dark { "github-dark.min.css" } else { "github.min.css" });
+    let bg = match (p.dark, p.github) { (true, true) => "#010409", (true, false) => "#0f0f0f", (false, true) => "#f6f8fa", (false, false) => "#f2f2f2" };
+    format!(
+        "<!DOCTYPE html>
+<html lang=\"{lang}\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">
+<title>{title}</title>
+<link rel=\"stylesheet\" href=\"{KATEX_CSS}\"><link rel=\"stylesheet\" href=\"{hl}\">
+<style>{css}
+body{{margin:0;background:{bg}}}.paper{{--paperw:{w}px;margin:40px auto;box-shadow:0 2px 18px rgba(0,0,0,.15)}}
+@media print{{body{{background:#fff}}.paper{{margin:0;box-shadow:none;max-width:none}}}}</style></head>
+<body><article class=\"{class}\">{body}</article></body></html>",
+        lang = esc(&p.lang), title = esc(&p.title), css = p.css.replace("</style", "<\\/style"), w = p.page_width, class = esc(&p.paper_class), body = p.body
+    )
+}
+
 #[tauri::command]
-async fn export_html(app: AppHandle, suggested_name: String, html: String) -> Result<Option<String>, String> {
+async fn export_html(app: AppHandle, page: Page) -> Result<Option<String>, String> {
+    let (suggested_name, html) = (format!("{}.html", page.title), html_page(&page));
+    // Debug builds only: automated tests export without the save dialog.
+    #[cfg(debug_assertions)]
+    if let Ok(p) = std::env::var("MD_EXPORT_TO") {
+        write(std::path::Path::new(&p), &html)?;
+        return Ok(Some(p));
+    }
     let Some(f) = app
         .dialog()
         .file()
@@ -310,4 +356,19 @@ fn main() {
             }
         }
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn html_export_page() {
+        let p = Page { title: "A & <B>".into(), lang: "de".into(), body: "<h1>Hi</h1>".into(), css: ".paper{color:red}".into(),
+            paper_class: "paper dark".into(), page_width: 820, dark: true, github: false };
+        let h = html_page(&p);
+        assert!(h.starts_with("<!DOCTYPE html>\n<html lang=\"de\">"));
+        assert!(h.contains("<title>A &amp; &lt;B&gt;</title>"));
+        assert!(h.contains("github-dark.min.css") && h.contains("background:#0f0f0f") && h.contains("--paperw:820px"));
+        assert!(h.ends_with("<body><article class=\"paper dark\"><h1>Hi</h1></article></body></html>"));
+    }
 }

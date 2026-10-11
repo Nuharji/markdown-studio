@@ -4,8 +4,6 @@ const ed = $('#editor'), paper = $('#paper'), canvas = $('#canvas'), workspace =
 const STORE = 'markdown-studio.v1';
 const F = '```';
 // Exported HTML files are opened outside the app, so they reference the CDN copies of the styles.
-const KATEX_CSS = 'https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css';
-const HLJS_CSS = 'https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.10.0/build/styles/';
 // Native backend (Rust/Tauri). Null when the UI is opened directly in a browser.
 const invoke = window.__TAURI__ ? window.__TAURI__.core.invoke : null;
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -519,30 +517,17 @@ async function save(as) {
     markDirty(false); renderTabs(); toast(t('toast.saved', {name: d.name}));
   } catch (e) { if (e.name !== 'AbortError') toast(t('toast.saveFail', {e: e.message})); }
 }
+/* HTML export: the page around the preview is put together and saved by Rust (main.rs: html_page). */
 async function exportHtml() {
-  render();
-  const d = cur(), title = d.name.replace(/\.[^.]+$/, '') || 'document', dark = isPaperDark();
-  const hl = HLJS_CSS + (dark ? 'github-dark.min.css' : 'github.min.css');
-  const bg = dark ? (isGh() ? '#010409' : '#0f0f0f') : (isGh() ? '#f6f8fa' : '#f2f2f2');
-  const body = paper.cloneNode(true);
+  await render();
+  const d = cur(), body = paper.cloneNode(true);
   body.querySelectorAll('.dg-tools').forEach(el => el.remove());
-  const html = `<!DOCTYPE html>
-<html lang="${lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${esc(title)}</title>
-<link rel="stylesheet" href="${KATEX_CSS}"><link rel="stylesheet" href="${hl}">
-<style>${$('#md-css').textContent}
-body{margin:0;background:${bg}}.paper{--paperw:${settings.pagew}px;margin:40px auto;box-shadow:0 2px 18px rgba(0,0,0,.15)}
-@media print{body{background:#fff}.paper{margin:0;box-shadow:none;max-width:none}}</style></head>
-<body><article class="${paper.className}">${body.innerHTML}</article></body></html>`;
-  if (invoke) {
-    try {
-      const path = await invoke('export_html', {suggestedName: title + '.html', html});
-      if (path) toast(t('toast.exported', {name: path}));
-    } catch (e) { toast(t('toast.exportFail', {e})); }
-    return;
-  }
-  download(title + '.html', html, 'text/html');
-  toast(t('toast.exported', {name: title + '.html'}));
+  const page = {title: d.name.replace(/\.[^.]+$/, '') || 'document', lang, body: body.innerHTML, css: $('#md-css').textContent,
+    paperClass: paper.className, pageWidth: +settings.pagew, dark: isPaperDark(), github: isGh()};
+  try {
+    const path = await invoke('export_html', {page});
+    if (path) toast(t('toast.exported', {name: path}));
+  } catch (e) { toast(t('toast.exportFail', {e})); }
 }
 
 /* Diagram export (hover toolbar on each diagram in the preview) */

@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.5.1 — 2026-10-11
+- HTML export: the page is now put together and saved by the Rust core.
+- Fixed: an HTML export made right after typing could miss the last changes.
+
 ## 1.5.0 — 2026-10-11
 - More of the app runs in its Rust core: formatting commands (bold, italic, code, headings, lists, quotes, blocks), find & replace, word/character statistics and the outline now come from Rust. Undo (Ctrl+Z) works as before.
 - The English and German texts are now language files (src-tauri/i18n) delivered by the Rust core.
