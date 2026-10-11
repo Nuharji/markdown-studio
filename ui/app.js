@@ -225,7 +225,13 @@ function openDoc(name, content, handle = null) {
   return d;
 }
 // Native files arrive from Rust as {path, name, content}.
-const openNative = list => list.forEach(f => { addRecent(f.path, f.name); const d = openDoc(f.name, f.content, f.path); stampOf(d); });
+/* Large documents take a moment for their preview: the loading bar (loadbar.js) shows it until the first rendering. */
+let renderJob = null;
+const openNative = list => list.forEach(f => {
+  addRecent(f.path, f.name);
+  if (window.LoadBar && (f.content || '').length > 200000) { if (renderJob) renderJob.done(); renderJob = LoadBar.start(f.name).step(t('load.render'), 0, 1, {busy: true}); }
+  const d = openDoc(f.name, f.content, f.path); stampOf(d);
+});
 async function ask(message) {
   return invoke
     ? invoke('confirm', {title: t('confirm.title'), message, okLabel: t('confirm.ok'), cancelLabel: t('confirm.cancel')})
@@ -294,6 +300,7 @@ async function render() {
   if (my !== renderSeq) return;
   renderInto(paper, r);
   invalidateSync(); buildOutline(r); updateStats(r);
+  if (renderJob) { renderJob.done(); renderJob = null; }
   if (spellFor !== ed.value) { drawMarks(); scheduleSpell(spellFor ? 700 : 150); }
 }
 
@@ -1253,7 +1260,7 @@ if (window.Native) {
   });
 }
 
-window.__md = {A, ed, runSpell, spellIssues: () => spellIssues, issueAt, spellMenu, spellAction, nextIssue, render, findNext, replaceAll, countMatches};  // test hook (like Dt's __dt)
+window.__md = {openNative, A, ed, runSpell, spellIssues: () => spellIssues, issueAt, spellMenu, spellAction, nextIssue, render, findNext, replaceAll, countMatches};  // test hook (like Dt's __dt)
 
 /* ================= Boot ================= */
 (async function boot() {

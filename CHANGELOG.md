@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.9.0 — 2026-10-11
+- Loading information: opening a large document shows a card with its name while the preview is built (only when it takes a moment).
+
 ## 1.8.0 — 2026-10-11
 - New: Settings → Shortcuts. Every menu command can get its own key: click it and press the new combination (with Ctrl or Alt, or a function key); Backspace removes a shortcut, ↺ or “Reset all” brings the defaults back. A key that another command used is moved (you get a note); system keys like Copy stay fixed. Menus, tooltips and Help → Keyboard Shortcuts show your keys.
 

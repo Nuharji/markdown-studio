@@ -251,5 +251,6 @@
   "keys.press": "Press keys …",
   "keys.needMod": "Please combine with Ctrl or Alt (or use a function key) — otherwise the shortcut gets in the way of typing.",
   "keys.taken": "{k} belonged to “{a}” — removed there.",
-  "keys.fixed": "{k} is reserved for “{a}”."
+  "keys.fixed": "{k} is reserved for “{a}”.",
+  "load.render": "Building the preview"
 }
