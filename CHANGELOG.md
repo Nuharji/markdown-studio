@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.5.0 — 2026-10-11
+- More of the app runs in its Rust core: formatting commands (bold, italic, code, headings, lists, quotes, blocks), find & replace, word/character statistics and the outline now come from Rust. Undo (Ctrl+Z) works as before.
+- The English and German texts are now language files (src-tauri/i18n) delivered by the Rust core.
+- The table of contents and printing wait for the preview to be ready.
+
 ## 1.4.0 — 2026-10-10
 - Markdown is now turned into HTML by the app's Rust core (pulldown-cmark) instead of a JavaScript library: GitHub-style tables, task lists, strikethrough, footnotes and bare links (https://…, www.…), math ($…$, $$…, `` `math ``) and Mermaid diagrams as before.
 - The preview's line anchors for synchronized scrolling now come from Rust too.

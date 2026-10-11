@@ -13,155 +13,8 @@ const slug = t => t.toLowerCase().trim().replace(/[^\p{L}\p{N}\s-]/gu, '').repla
 const norm = t => t.toLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
 
 /* ================= Translations ================= */
-const I18N = {
-  en: {
-    'menu.file': 'File', 'menu.edit': 'Edit', 'menu.insert': 'Insert', 'menu.view': 'View', 'menu.settings': 'Settings', 'menu.help': 'Help',
-    'menu.language': 'Language', 'menu.theme': 'Theme',
-    'a.newDoc': 'New', 'a.openFile': 'Open…', 'a.save': 'Save', 'a.saveAs': 'Save As…', 'a.reloadFile': 'Refresh from Disk',
-    'toast.reloaded': '“{name}” was changed outside and reloaded.', 'toast.changedOutside': '“{name}” was changed outside — press F5 to load it (your unsaved changes would be replaced).',
-    'confirm.reload': '“{name}” has unsaved changes. Replace them with the version from disk?', 'toast.upToDate': '“{name}” is up to date.', 'toast.notOnDisk': '“{name}” isn’t saved as a file yet.', 'a.exportHtml': 'Export as HTML…',
-    'a.print': 'Print / Save as PDF…', 'a.closeTab': 'Close Tab', 'a.undo': 'Undo', 'a.redo': 'Redo', 'a.find': 'Find & Replace',
-    'a.findNext': 'Find Next', 'a.selectAll': 'Select All', 'a.h1': 'Heading 1', 'a.h2': 'Heading 2', 'a.h3': 'Heading 3',
-    'a.para': 'Paragraph', 'a.heading': 'Heading — cycles H1 → H2 → H3 → text', 'a.bold': 'Bold', 'a.italic': 'Italic',
-    'a.strike': 'Strikethrough', 'a.code': 'Inline Code', 'a.link': 'Link', 'a.image': 'Image', 'a.ul': 'Bulleted List',
-    'a.ol': 'Numbered List', 'a.task': 'Task List', 'a.quote': 'Quote', 'a.codeblock': 'Code Block', 'a.table': 'Table',
-    'a.hr': 'Horizontal Rule', 'a.mathInline': 'Inline Math', 'a.mathBlock': 'Math Block', 'a.toc': 'Table of Contents',
-    'a.date': 'Current Date', 'a.viewEdit': 'Editor Only', 'a.viewSplit': 'Split View', 'a.viewPreview': 'Preview Only',
-    'a.togglePanels': 'Panels', 'a.toggleSync': 'Synchronized Scrolling', 'a.toggleWrap': 'Word Wrap', 'a.togglePaper': 'Dark Paper',
-    'a.zoomIn': 'Zoom In', 'a.zoomOut': 'Zoom Out', 'a.zoomReset': 'Actual Size', 'a.openGuide': 'Syntax Guide',
-    'a.refMd': 'Markdown Reference', 'a.refLatex': 'LaTeX Reference', 'a.shortcuts': 'Keyboard Shortcuts',
-    'a.about': 'About Markdown Studio', 'a.settings': 'Preferences…', 'a.langAuto': 'System language',
-    'a.langEn': 'English', 'a.langDe': 'Deutsch', 'a.themeDark': 'Dark', 'a.themeLight': 'Light', 'a.themeGithub': 'GitHub',
-    'a.themeGithubDark': 'GitHub Dark', 'a.diagram': 'Diagram',
-    'ui.emptyTitle': 'Open a Markdown file to get started',
-    'ui.emptyHint': 'Drop .md files here, start a new document (Alt+N), or use File → Open (Ctrl+O).',
-    'ui.recent': 'Recent files', 'toast.missing': 'File not found: {name}', 'ctx.closeOthers': 'Close Other Tabs',
-    'ui.diagrams': 'Diagrams (Mermaid)', 'ui.diagramCount': 'Diagrams', 'dg.error': 'Diagram error',
-    'dg.saveSvg': 'Save diagram as SVG', 'dg.savePng': 'Save diagram as PNG (2×)', 'dg.file': 'diagram',
-    'toast.dgFail': 'Could not export the diagram: {e}', 'about.version': 'Version {v}',
-    'g.dg': 'Diagrams',
-    'g.dgIntro': 'Diagrams are drawn with **Mermaid** from a fenced code block with the language `mermaid`. Hover a diagram in the preview to save it as SVG or PNG. All diagram types: <https://mermaid.js.org/intro/>',
-    'theme.dark': 'Dark', 'theme.light': 'Light', 'theme.github': 'GitHub', 'theme.github-dark': 'GitHub Dark',
-    'ui.export': 'Export', 'ui.style': 'Style', 'ui.editor': 'Editor', 'ui.split': 'Split', 'ui.preview': 'Preview', 'ui.source': 'Source',
-    'ui.outline': 'Outline', 'ui.properties': 'Properties', 'ui.find': 'Find', 'ui.replaceWith': 'Replace with',
-    'ui.matchCase': 'Match case', 'ui.replace': 'Replace', 'ui.replaceAll': 'Replace all', 'ui.prev': 'Previous (Shift+Enter)',
-    'ui.next': 'Next (Enter / F3)', 'ui.closeEsc': 'Close (Esc)', 'ui.close': 'Close', 'ui.searchMd': 'Search Markdown syntax…',
-    'ui.searchLatex': 'Search LaTeX syntax…', 'ui.fullGuide': 'Full guide', 'ui.symbols': 'Symbols — click to insert',
-    'ui.insert': 'Insert', 'ui.document': 'Document', 'ui.name': 'Name', 'ui.words': 'Words', 'ui.chars': 'Characters',
-    'ui.lines': 'Lines', 'ui.headings': 'Headings', 'ui.math': 'Math expressions', 'ui.codeBlocks': 'Code blocks',
-    'ui.linksImages': 'Links / Images', 'ui.readingTime': 'Reading time', 'ui.openSettings': 'Open settings…',
-    'ui.placeholder': 'Start writing Markdown…', 'ui.drop': 'Drop Markdown files to open them',
-    'ui.noHeadings': 'No headings yet.<br>Start a line with <code>#</code> to create one.',
-    'ui.notSaved': '(not saved to disk)', 'ui.newDocTip': 'New document', 'ui.resize': 'Drag to resize',
-    'st.dirty': 'Unsaved changes (autosaved in app)', 'st.saved': 'Saved to disk', 'st.clean': 'Up to date',
-    'st.pos': 'Ln {l}, Col {c}', 'st.sel': '({n} selected)', 'st.words': '{n} words', 'st.chars': '{n} chars',
-    'st.read': '{n} min read', 'st.min': '{n} min',
-    'find.count': '{i} of {n}', 'find.found': '{n} found', 'find.none': 'No results', 'find.replaced': 'Replaced {n} occurrence(s)',
-    'toast.saved': 'Saved {name}', 'toast.downloaded': 'Downloaded {name}', 'toast.exported': 'Exported {name}',
-    'toast.openFail': 'Could not open file: {e}', 'toast.saveFail': 'Save failed: {e}', 'toast.exportFail': 'Export failed: {e}',
-    'toast.printFail': 'Print failed: {e}', 'toast.linkFail': 'Could not open link: {e}',
-    'toast.skipped': 'Skipped {name} (not a Markdown file)', 'toast.noHeadings': 'Add some headings first',
-    'confirm.title': 'Unsaved changes', 'confirm.close': '"{name}" has unsaved changes. Close it anyway?',
-    'confirm.ok': 'Close anyway', 'confirm.cancel': 'Cancel',
-    'doc.untitled': 'Untitled', 'doc.contents': 'Contents', 'doc.guideFile': 'Syntax-Guide.md',
-    'libfail': 'Could not load the bundled rendering libraries (ui/vendor).',
-    'ed.editor': 'Editor', 'ed.indent': 'Indent / outdent', 'ed.continue': 'Continue list', 'ed.zoom': 'Zoom preview', 'ed.wheel': 'wheel',
-    'about.p1': '<b>Markdown Studio</b> is a Markdown and LaTeX editor with a native Rust (Tauri) backend for Windows, macOS and Linux.',
-    'about.p2': 'Rendering: {libs}.',
-    'about.p3': 'Documents autosave inside the app. Use <kbd>Ctrl+S</kbd> to save a real <code>.md</code> file to disk.',
-    'set.title': 'Settings', 'set.general': 'General', 'set.appearance': 'Appearance', 'set.editor': 'Editor', 'set.preview': 'Preview',
-    'set.language': 'Language', 'set.languageHint': 'Language of menus, panels, messages and the syntax guide.',
-    'set.layout': 'Layout', 'set.panels': 'Show panels on the right', 'set.theme': 'Theme', 'set.paper': 'Paper',
-    'set.paperHint': 'Background of the document page in the preview.', 'set.paperAuto': 'Match theme', 'set.light': 'Light',
-    'set.dark': 'Dark', 'set.font': 'Preview font', 'set.sans': 'Sans-serif', 'set.serif': 'Serif', 'set.pageWidth': 'Page width',
-    'set.zoom': 'Zoom', 'set.edFont': 'Font size', 'set.behavior': 'Behavior', 'set.wrap': 'Word wrap',
-    'set.sync': 'Synchronized scrolling between editor and preview', 'set.reset': 'Reset to defaults', 'set.done': 'Done',
-    'set.resetDone': 'Settings reset to defaults',
-    'g.title': 'Markdown & LaTeX Syntax Guide',
-    'g.intro': 'A reference for everything **Markdown Studio** can render. Each entry shows the source, followed by the rendered result in a dashed box.',
-    'g.md': 'Markdown',
-    'g.mdIntro': 'Markdown Studio follows **CommonMark** plus **GitHub Flavored Markdown** (GFM): tables, task lists, strikethrough and autolinks.',
-    'g.latex': 'LaTeX math',
-    'g.latexIntro': 'Math is typeset with **KaTeX**, which supports most LaTeX math-mode commands. Use `$...$` for inline math and `$$...$$` on separate lines for display math. If an expression has an error, it is shown in red. Full KaTeX function list: <https://katex.org/docs/supported.html>',
-    'g.keys': 'Keyboard shortcuts', 'g.menu': 'Menu', 'g.command': 'Command', 'g.shortcut': 'Shortcut', 'g.action': 'Action',
-    'g.indent': 'Indent / outdent the selected lines', 'g.enter': 'in a list', 'g.enterDo': 'Continue the list (press again on an empty item to end it)',
-    'g.f3': 'Find next', 'g.wheel': 'mouse wheel over the preview', 'g.wheelDo': 'Zoom the page', 'g.mid': 'Middle-click a tab', 'g.midDo': 'Close it'
-  },
-  de: {
-    'menu.file': 'Datei', 'menu.edit': 'Bearbeiten', 'menu.insert': 'Einfügen', 'menu.view': 'Ansicht', 'menu.settings': 'Einstellungen', 'menu.help': 'Hilfe',
-    'menu.language': 'Sprache', 'menu.theme': 'Design',
-    'a.newDoc': 'Neu', 'a.openFile': 'Öffnen…', 'a.save': 'Speichern', 'a.saveAs': 'Speichern unter…', 'a.reloadFile': 'Von Festplatte aktualisieren',
-    'toast.reloaded': '„{name}“ wurde außerhalb geändert und neu geladen.', 'toast.changedOutside': '„{name}“ wurde außerhalb geändert — F5 lädt die neue Fassung (deine ungespeicherten Änderungen würden ersetzt).',
-    'confirm.reload': '„{name}“ hat ungespeicherte Änderungen. Durch die Fassung von der Festplatte ersetzen?', 'toast.upToDate': '„{name}“ ist aktuell.', 'toast.notOnDisk': '„{name}“ ist noch nicht als Datei gespeichert.', 'a.exportHtml': 'Als HTML exportieren…',
-    'a.print': 'Drucken / Als PDF speichern…', 'a.closeTab': 'Tab schließen', 'a.undo': 'Rückgängig', 'a.redo': 'Wiederholen',
-    'a.find': 'Suchen & Ersetzen', 'a.findNext': 'Weitersuchen', 'a.selectAll': 'Alles auswählen', 'a.h1': 'Überschrift 1',
-    'a.h2': 'Überschrift 2', 'a.h3': 'Überschrift 3', 'a.para': 'Absatz', 'a.heading': 'Überschrift – wechselt H1 → H2 → H3 → Text',
-    'a.bold': 'Fett', 'a.italic': 'Kursiv', 'a.strike': 'Durchgestrichen', 'a.code': 'Inline-Code', 'a.link': 'Link', 'a.image': 'Bild',
-    'a.ul': 'Aufzählung', 'a.ol': 'Nummerierte Liste', 'a.task': 'Aufgabenliste', 'a.quote': 'Zitat', 'a.codeblock': 'Codeblock',
-    'a.table': 'Tabelle', 'a.hr': 'Trennlinie', 'a.mathInline': 'Inline-Formel', 'a.mathBlock': 'Formelblock',
-    'a.toc': 'Inhaltsverzeichnis', 'a.date': 'Aktuelles Datum', 'a.viewEdit': 'Nur Editor', 'a.viewSplit': 'Geteilte Ansicht',
-    'a.viewPreview': 'Nur Vorschau', 'a.togglePanels': 'Bedienfelder', 'a.toggleSync': 'Synchrones Scrollen',
-    'a.toggleWrap': 'Zeilenumbruch', 'a.togglePaper': 'Dunkles Papier', 'a.zoomIn': 'Vergrößern', 'a.zoomOut': 'Verkleinern',
-    'a.zoomReset': 'Originalgröße', 'a.openGuide': 'Syntax-Anleitung', 'a.refMd': 'Markdown-Referenz', 'a.refLatex': 'LaTeX-Referenz',
-    'a.shortcuts': 'Tastenkürzel', 'a.about': 'Über Markdown Studio', 'a.settings': 'Einstellungen…', 'a.langAuto': 'Systemsprache',
-    'a.langEn': 'English', 'a.langDe': 'Deutsch', 'a.themeDark': 'Dunkel', 'a.themeLight': 'Hell', 'a.themeGithub': 'GitHub',
-    'a.themeGithubDark': 'GitHub Dunkel', 'a.diagram': 'Diagramm',
-    'ui.emptyTitle': 'Öffne eine Markdown-Datei, um loszulegen',
-    'ui.emptyHint': 'Lege .md-Dateien hier ab, beginne ein neues Dokument (Alt+N) oder nutze Datei → Öffnen (Strg+O).',
-    'ui.recent': 'Zuletzt geöffnet', 'toast.missing': 'Datei nicht gefunden: {name}', 'ctx.closeOthers': 'Andere Tabs schließen',
-    'ui.diagrams': 'Diagramme (Mermaid)', 'ui.diagramCount': 'Diagramme', 'dg.error': 'Fehler im Diagramm',
-    'dg.saveSvg': 'Diagramm als SVG speichern', 'dg.savePng': 'Diagramm als PNG speichern (2×)', 'dg.file': 'diagramm',
-    'toast.dgFail': 'Diagramm konnte nicht exportiert werden: {e}', 'about.version': 'Version {v}',
-    'g.dg': 'Diagramme',
-    'g.dgIntro': 'Diagramme werden mit **Mermaid** aus einem eingezäunten Codeblock mit der Sprache `mermaid` gezeichnet. Fahre in der Vorschau über ein Diagramm, um es als SVG oder PNG zu speichern. Alle Diagrammtypen: <https://mermaid.js.org/intro/>',
-    'theme.dark': 'Dunkel', 'theme.light': 'Hell', 'theme.github': 'GitHub', 'theme.github-dark': 'GitHub Dunkel',
-    'ui.export': 'Exportieren', 'ui.style': 'Format', 'ui.editor': 'Editor', 'ui.split': 'Geteilt', 'ui.preview': 'Vorschau',
-    'ui.source': 'Quelltext', 'ui.outline': 'Gliederung', 'ui.properties': 'Eigenschaften', 'ui.find': 'Suchen',
-    'ui.replaceWith': 'Ersetzen durch', 'ui.matchCase': 'Groß-/Kleinschreibung', 'ui.replace': 'Ersetzen', 'ui.replaceAll': 'Alle ersetzen',
-    'ui.prev': 'Vorheriger (Umschalt+Eingabe)', 'ui.next': 'Nächster (Eingabe / F3)', 'ui.closeEsc': 'Schließen (Esc)',
-    'ui.close': 'Schließen', 'ui.searchMd': 'Markdown-Syntax durchsuchen…', 'ui.searchLatex': 'LaTeX-Syntax durchsuchen…',
-    'ui.fullGuide': 'Ganze Anleitung', 'ui.symbols': 'Symbole – zum Einfügen klicken', 'ui.insert': 'Einfügen',
-    'ui.document': 'Dokument', 'ui.name': 'Name', 'ui.words': 'Wörter', 'ui.chars': 'Zeichen', 'ui.lines': 'Zeilen',
-    'ui.headings': 'Überschriften', 'ui.math': 'Formeln', 'ui.codeBlocks': 'Codeblöcke', 'ui.linksImages': 'Links / Bilder',
-    'ui.readingTime': 'Lesezeit', 'ui.openSettings': 'Einstellungen öffnen…', 'ui.placeholder': 'Markdown schreiben…',
-    'ui.drop': 'Markdown-Dateien hier ablegen, um sie zu öffnen',
-    'ui.noHeadings': 'Noch keine Überschriften.<br>Beginne eine Zeile mit <code>#</code>, um eine zu erstellen.',
-    'ui.notSaved': '(nicht auf der Festplatte gespeichert)', 'ui.newDocTip': 'Neues Dokument', 'ui.resize': 'Ziehen zum Anpassen',
-    'st.dirty': 'Ungespeicherte Änderungen (in der App gesichert)', 'st.saved': 'Auf der Festplatte gespeichert', 'st.clean': 'Aktuell',
-    'st.pos': 'Z {l}, Sp {c}', 'st.sel': '({n} ausgewählt)', 'st.words': '{n} Wörter', 'st.chars': '{n} Zeichen',
-    'st.read': '{n} Min. Lesezeit', 'st.min': '{n} Min.',
-    'find.count': '{i} von {n}', 'find.found': '{n} gefunden', 'find.none': 'Keine Treffer', 'find.replaced': '{n} Treffer ersetzt',
-    'toast.saved': '{name} gespeichert', 'toast.downloaded': '{name} heruntergeladen', 'toast.exported': '{name} exportiert',
-    'toast.openFail': 'Datei konnte nicht geöffnet werden: {e}', 'toast.saveFail': 'Speichern fehlgeschlagen: {e}',
-    'toast.exportFail': 'Export fehlgeschlagen: {e}', 'toast.printFail': 'Drucken fehlgeschlagen: {e}',
-    'toast.linkFail': 'Link konnte nicht geöffnet werden: {e}', 'toast.skipped': '{name} übersprungen (keine Markdown-Datei)',
-    'toast.noHeadings': 'Füge zuerst Überschriften hinzu',
-    'confirm.title': 'Ungespeicherte Änderungen', 'confirm.close': '„{name}“ hat ungespeicherte Änderungen. Trotzdem schließen?',
-    'confirm.ok': 'Trotzdem schließen', 'confirm.cancel': 'Abbrechen',
-    'doc.untitled': 'Unbenannt', 'doc.contents': 'Inhalt', 'doc.guideFile': 'Syntax-Anleitung.md',
-    'libfail': 'Die mitgelieferten Darstellungsbibliotheken (ui/vendor) konnten nicht geladen werden.',
-    'ed.editor': 'Editor', 'ed.indent': 'Einrücken / Ausrücken', 'ed.continue': 'Liste fortsetzen', 'ed.zoom': 'Vorschau zoomen', 'ed.wheel': 'Mausrad',
-    'about.p1': '<b>Markdown Studio</b> ist ein Markdown- und LaTeX-Editor mit nativem Rust-Backend (Tauri) für Windows, macOS und Linux.',
-    'about.p2': 'Darstellung: {libs}.',
-    'about.p3': 'Dokumente werden automatisch in der App gesichert. Mit <kbd>Strg+S</kbd> speicherst du eine echte <code>.md</code>-Datei auf der Festplatte.',
-    'set.title': 'Einstellungen', 'set.general': 'Allgemein', 'set.appearance': 'Darstellung', 'set.editor': 'Editor', 'set.preview': 'Vorschau',
-    'set.language': 'Sprache', 'set.languageHint': 'Sprache der Menüs, Bedienfelder, Meldungen und der Syntax-Anleitung.',
-    'set.layout': 'Layout', 'set.panels': 'Bedienfelder rechts anzeigen', 'set.theme': 'Design', 'set.paper': 'Papier',
-    'set.paperHint': 'Hintergrund der Dokumentseite in der Vorschau.', 'set.paperAuto': 'Wie Design', 'set.light': 'Hell',
-    'set.dark': 'Dunkel', 'set.font': 'Vorschau-Schrift', 'set.sans': 'Serifenlos', 'set.serif': 'Serifen', 'set.pageWidth': 'Seitenbreite',
-    'set.zoom': 'Zoom', 'set.edFont': 'Schriftgröße', 'set.behavior': 'Verhalten', 'set.wrap': 'Zeilenumbruch',
-    'set.sync': 'Synchrones Scrollen von Editor und Vorschau', 'set.reset': 'Auf Standard zurücksetzen', 'set.done': 'Fertig',
-    'set.resetDone': 'Einstellungen zurückgesetzt',
-    'g.title': 'Markdown- & LaTeX-Syntax-Anleitung',
-    'g.intro': 'Eine Referenz für alles, was **Markdown Studio** darstellen kann. Jeder Eintrag zeigt den Quelltext und darunter das Ergebnis in einem gestrichelten Rahmen.',
-    'g.md': 'Markdown',
-    'g.mdIntro': 'Markdown Studio folgt **CommonMark** und **GitHub Flavored Markdown** (GFM): Tabellen, Aufgabenlisten, Durchstreichen und automatische Links.',
-    'g.latex': 'LaTeX-Formeln',
-    'g.latexIntro': 'Formeln werden mit **KaTeX** gesetzt, das die meisten LaTeX-Befehle des Formelmodus unterstützt. `$...$` für Formeln im Text, `$$...$$` in eigenen Zeilen für abgesetzte Formeln. Fehlerhafte Ausdrücke werden rot angezeigt. Alle KaTeX-Funktionen: <https://katex.org/docs/supported.html>',
-    'g.keys': 'Tastenkürzel', 'g.menu': 'Menü', 'g.command': 'Befehl', 'g.shortcut': 'Kürzel', 'g.action': 'Aktion',
-    'g.indent': 'Ausgewählte Zeilen ein- / ausrücken', 'g.enter': 'in einer Liste', 'g.enterDo': 'Liste fortsetzen (auf einem leeren Eintrag erneut drücken, um sie zu beenden)',
-    'g.f3': 'Weitersuchen', 'g.wheel': 'Mausrad über der Vorschau', 'g.wheelDo': 'Seite zoomen', 'g.mid': 'Mittelklick auf einen Tab', 'g.midDo': 'Tab schließen'
-  }
+/* The texts (English / German) live in src-tauri/i18n/*.json and are loaded from Rust at start. */
+let I18N = {en: {}, de: {}
 };
 let lang = 'en';
 function t(key, vars) {
@@ -173,7 +26,6 @@ const fmtKey = k => lang === 'de' ? k.replace(/Ctrl/g, 'Strg').replace(/Shift/g,
 const num = n => n.toLocaleString(lang);
 
 const LIBS_OK = !!(window.katex && window.DOMPurify && invoke);
-if (!LIBS_OK) document.body.insertAdjacentHTML('beforeend', `<div class="libfail">${t('libfail')}</div>`);
 
 /* ================= Rendering ================= */
 const MACROS = {'\\R':'\\mathbb{R}','\\N':'\\mathbb{N}','\\Z':'\\mathbb{Z}','\\Q':'\\mathbb{Q}','\\C':'\\mathbb{C}'};
@@ -443,7 +295,7 @@ async function render() {
   const my = ++renderSeq, [r] = await mdRender([ed.value]);
   if (my !== renderSeq) return;
   renderInto(paper, r);
-  invalidateSync(); buildOutline(); updateStats();
+  invalidateSync(); buildOutline(r); updateStats(r);
 }
 
 /* ================= Status, outline & stats ================= */
@@ -457,46 +309,32 @@ function updateCursor() {
 }
 ['keyup', 'click', 'select', 'focus'].forEach(ev => ed.addEventListener(ev, updateCursor));
 
-function updateStats() {
-  const v = ed.value;
-  const words = (v.match(/[\p{L}\p{N}][\p{L}\p{N}'’_-]*/gu) || []).length;
-  const read = Math.max(1, Math.ceil(words / 220));
+/* r = the Rust rendering: stats {words, chars, lines, code, links, images}, headings, math, diagrams. */
+function updateStats(r) {
+  const s = r.stats, words = s.words, read = Math.max(1, Math.ceil(words / 220));
   $('#stWords').textContent = t('st.words', {n: num(words)});
-  $('#stChars').textContent = t('st.chars', {n: num(v.length)});
+  $('#stChars').textContent = t('st.chars', {n: num(s.chars)});
   $('#stRead').textContent = t('st.read', {n: read});
   $('#pWords').textContent = num(words);
-  $('#pChars').textContent = num(v.length);
-  $('#pLines').textContent = num(v.split('\n').length);
-  $('#pHeads').textContent = paper.querySelectorAll('h1,h2,h3,h4,h5,h6').length;
-  $('#pMath').textContent = paper.querySelectorAll('[data-math]').length;
-  $('#pDiagrams').textContent = paper.querySelectorAll('[data-diagram]').length;
-  $('#pCode').textContent = paper.querySelectorAll('pre').length;
-  $('#pLinks').textContent = `${paper.querySelectorAll('a[href]').length} / ${paper.querySelectorAll('img').length}`;
+  $('#pChars').textContent = num(s.chars);
+  $('#pLines').textContent = num(s.lines);
+  $('#pHeads').textContent = r.headings.length;
+  $('#pMath').textContent = r.math.length;
+  $('#pDiagrams').textContent = r.diagrams.length;
+  $('#pCode').textContent = s.code;
+  $('#pLinks').textContent = `${s.links} / ${s.images}`;
   $('#pRead').textContent = t('st.min', {n: read});
 }
 
-function headingLines(src) {
-  const out = []; let fence = null;
-  src.split('\n').forEach((l, i) => {
-    const m = /^ {0,3}(`{3,}|~{3,})/.exec(l);
-    if (fence) {
-      if (m && m[1][0] === fence[0] && m[1].length >= fence.length && !l.trim().slice(m[1].length).trim()) fence = null;
-      return;
-    }
-    if (m) { fence = m[1]; return; }
-    const h = /^ {0,3}#{1,6}\s+(.*?)(?:\s+#+)?\s*$/.exec(l);
-    if (h) out.push({line: i, key: norm(h[1].replace(/\[([^\]]*)\]\([^)]*\)/g, '$1'))});
-  });
-  return out;
-}
 function outlineHeadings() { return [...paper.querySelectorAll('h1,h2,h3,h4,h5,h6')].filter(h => !h.closest('.example')); }
 /* Scroll only the preview canvas (scrollIntoView would also scroll the app frame). */
 function scrollPreviewTo(el) {
   const top = el.getBoundingClientRect().top - canvas.getBoundingClientRect().top + canvas.scrollTop - 16;
   canvas.scrollTo({top: Math.max(0, top), behavior: 'smooth'});
 }
-function buildOutline() {
-  const box = $('#outline'), used = {}, src = headingLines(ed.value);
+/* The outline: headings and their source lines come from Rust; the preview's heading elements are matched in order. */
+function buildOutline(r) {
+  const box = $('#outline'), used = {}, src = r.headings.map(([level, text, line]) => ({key: norm(text), line}));
   const hs = outlineHeadings();
   box.innerHTML = hs.length ? '' : `<div class="empty">${t('ui.noHeadings')}</div>`;
   let from = 0;
@@ -550,63 +388,17 @@ function replaceRange(s, e, text, selS, selE) {
 }
 const selInfo = () => ({s: ed.selectionStart, e: ed.selectionEnd, v: ed.value, sel: ed.value.slice(ed.selectionStart, ed.selectionEnd)});
 
-function wrap(b, a = b, ph = 'text') {
-  const {s, e, v, sel} = selInfo();
-  if (sel && v.slice(s - b.length, s) === b && v.slice(e, e + a.length) === a)
-    return replaceRange(s - b.length, e + a.length, sel, s - b.length, e - b.length);
-  if (sel.length >= b.length + a.length && sel.startsWith(b) && sel.endsWith(a)) {
-    const inner = sel.slice(b.length, sel.length - a.length);
-    return replaceRange(s, e, inner, s, s + inner.length);
-  }
-  const txt = sel || ph;
-  replaceRange(s, e, b + txt + a, s + b.length, s + b.length + txt.length);
+/* Formatting commands are computed in Rust (edit.rs): it answers with one edit, which is applied here so Ctrl+Z works. */
+async function runEdit(cmd) {
+  const {s, e} = selInfo();
+  const r = await invoke('md_edit', {text: ed.value, s, e, cmd});
+  replaceRange(r.s, r.e, r.text, r.sel_s, r.sel_e);
 }
-function prefixLines(make, isRe) {
-  const v = ed.value, s = ed.selectionStart; let e = ed.selectionEnd;
-  if (e > s && v[e - 1] === '\n') e--;
-  const ls = v.lastIndexOf('\n', s - 1) + 1; let le = v.indexOf('\n', e); if (le < 0) le = v.length;
-  const lines = v.slice(ls, le).split('\n');
-  const strip = l => l.replace(/^(\s*)(?:[-*+]\s+\[[ xX]\]\s+|[-*+]\s+|\d+[.)]\s+|>\s?)/, '$1');
-  const filled = lines.filter(l => l.trim());
-  const allOn = filled.length && filled.every(l => isRe.test(l));
-  let n = 0;
-  const out = lines.map(l => {
-    if (!l.trim() && lines.length > 1) return l;
-    if (allOn) return strip(l);
-    const ind = /^\s*/.exec(l)[0];
-    return ind + make(n++) + strip(l).slice(ind.length);
-  }).join('\n');
-  if (lines.length === 1) replaceRange(ls, le, out, ls + out.length, ls + out.length);
-  else replaceRange(ls, le, out, ls, ls + out.length);
-}
-function insertBlock(text, selFrom, selLen) {
-  const {s, e, v} = selInfo(), before = v.slice(0, s), after = v.slice(e);
-  const pre = !before ? '' : before.endsWith('\n\n') ? '' : before.endsWith('\n') ? '\n' : '\n\n';
-  const post = !after ? '\n' : after.startsWith('\n\n') ? '' : after.startsWith('\n') ? '\n' : '\n\n';
-  const base = s + pre.length;
-  const a = selFrom != null ? base + selFrom : base + text.length;
-  replaceRange(s, e, pre + text + post, a, selFrom != null ? a + selLen : a);
-}
+const wrap = (before, after = before, placeholder = 'text') => runEdit({kind: 'wrap', before, after, placeholder});
+const insertBlock = (block, selFrom = null, selLen = null) => runEdit({kind: 'block', block, sel_from: selFrom, sel_len: selLen});
+const setHeading = (level, toggle = true) => runEdit({kind: 'heading', level, toggle, cycle: false});
+const listCmd = list => runEdit({kind: 'prefix', list});
 function insertAtCursor(text) { const {s, e} = selInfo(); replaceRange(s, e, text); }
-function lineBounds() {
-  const v = ed.value, s = ed.selectionStart;
-  const ls = v.lastIndexOf('\n', s - 1) + 1; let le = v.indexOf('\n', s); if (le < 0) le = v.length;
-  return {ls, le, line: v.slice(ls, le)};
-}
-function setHeading(level, toggle = true) {
-  const {ls, le, line} = lineBounds();
-  const m = /^ {0,3}(#{1,6})\s+/.exec(line), curL = m ? m[1].length : 0;
-  const text = line.replace(/^ {0,3}#{1,6}\s+/, '');
-  const out = level === 0 || (toggle && level === curL) ? text : '#'.repeat(level) + ' ' + text;
-  replaceRange(ls, le, out, ls + out.length, ls + out.length);
-}
-function inMath() {
-  const before = ed.value.slice(0, ed.selectionStart).replace(/\\\$/g, '');
-  if ((before.match(/\$\$/g) || []).length % 2) return true;
-  const para = before.split(/\n\s*\n/).pop().replace(/\$\$/g, '');
-  return (para.match(/\$/g) || []).length % 2 === 1;
-}
-
 /* Editor keys: Tab indent, Enter continues lists */
 ed.addEventListener('keydown', e => {
   if (e.key === 'Tab' && !e.ctrlKey && !e.altKey) {
@@ -639,23 +431,19 @@ function openFind() {
   findIn.focus(); findIn.select(); countMatches();
 }
 function closeFind() { $('#findbar').classList.remove('show'); ed.focus(); }
-function matchesFor(q) {
-  const cs = findCase.checked, v = cs ? ed.value : ed.value.toLowerCase(), qq = cs ? q : q.toLowerCase(), out = [];
-  if (!q) return out;
-  for (let i = v.indexOf(qq); i >= 0; i = v.indexOf(qq, i + qq.length)) out.push(i);
-  return out;
-}
-function countMatches() {
-  const q = findIn.value, list = matchesFor(q);
+/* Matches are found in Rust (edit.rs); positions are the text field's. */
+const matchesFor = q => q ? invoke('md_find', {text: ed.value, query: q, case: findCase.checked}) : Promise.resolve([]);
+async function countMatches() {
+  const q = findIn.value, list = await matchesFor(q);
   if (!q) return $('#fCount').textContent = '';
   const k = list.indexOf(ed.selectionStart);
   $('#fCount').textContent = list.length
     ? (k >= 0 && ed.selectionEnd - ed.selectionStart === q.length ? t('find.count', {i: k + 1, n: list.length}) : t('find.found', {n: list.length}))
     : t('find.none');
 }
-function findNext(back = false) {
+async function findNext(back = false) {
   const q = findIn.value; if (!q) return openFind();
-  const list = matchesFor(q); if (!list.length) return countMatches();
+  const list = await matchesFor(q); if (!list.length) return countMatches();
   const s = ed.selectionStart;
   let i = back ? [...list].reverse().find(x => x < s) : list.find(x => x > s || (x === s && ed.selectionEnd === s));
   if (i == null) i = back ? list[list.length - 1] : list[0];
@@ -668,11 +456,11 @@ function replaceOne() {
   if (same) { replaceRange(s, e, replIn.value); findIn.focus(); }
   findNext();
 }
-function replaceAll() {
+async function replaceAll() {
   const q = findIn.value; if (!q) return;
-  const n = matchesFor(q).length; if (!n) return countMatches();
-  const re = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g' + (findCase.checked ? '' : 'i'));
-  replaceRange(0, ed.value.length, ed.value.replace(re, () => replIn.value), 0, 0);
+  const [text, n] = await invoke('md_replace_all', {text: ed.value, query: q, replacement: replIn.value, case: findCase.checked});
+  if (!n) return countMatches();
+  replaceRange(0, ed.value.length, text, 0, 0);
   toast(t('find.replaced', {n})); countMatches();
 }
 findIn.addEventListener('input', countMatches);
@@ -872,7 +660,7 @@ async function buildCards() {
     b.className = 'glyph'; b.title = cmd;
     b.innerHTML = katex.renderToString(cmd, {throwOnError: false, macros: {...MACROS}});
     b.onmousedown = e => e.preventDefault();
-    b.onclick = () => (cur() || A.newDoc()) && insertAtCursor(inMath() ? cmd + (/[a-zA-Z]$/.test(cmd) ? ' ' : '') : `$${cmd}$`);
+    b.onclick = async () => { if (!cur()) A.newDoc(); const math = await invoke('md_in_math', {text: ed.value, pos: ed.selectionStart}); insertAtCursor(math ? cmd + (/[a-zA-Z]$/.test(cmd) ? ' ' : '') : `$${cmd}$`); };
     g.append(b);
   });
   $$('[data-filter]').forEach(inp => inp.dispatchEvent(new Event('input')));
@@ -952,8 +740,8 @@ function toast(msg) { const el = $('#toast'); el.textContent = msg; el.classList
 const A = {
   newDoc: () => openDoc(null, ''),
   openFile, save: () => save(false), reloadFile, saveAs: () => save(true), exportHtml,
-  print: () => {
-    render();
+  print: async () => {
+    await render();
     setTimeout(() => invoke ? invoke('print_page').catch(e => toast(t('toast.printFail', {e}))) : window.print(), 60);
   },
   closeTab: () => closeTab(active),
@@ -962,7 +750,7 @@ const A = {
   selectAll: () => { ed.focus(); ed.select(); },
   find: openFind, findNext: () => findNext(),
   h1: () => setHeading(1), h2: () => setHeading(2), h3: () => setHeading(3), para: () => setHeading(0),
-  heading: () => { const m = /^ {0,3}(#{1,6})\s/.exec(lineBounds().line), l = m ? m[1].length : 0; setHeading(l >= 3 ? 0 : l + 1, false); },
+  heading: () => runEdit({kind: 'heading', level: 0, toggle: false, cycle: true}),
   bold: () => wrap('**', '**', lang === 'de' ? 'fetter Text' : 'bold text'),
   italic: () => wrap('*', '*', lang === 'de' ? 'kursiver Text' : 'italic text'),
   strike: () => wrap('~~', '~~', lang === 'de' ? 'durchgestrichen' : 'strikethrough'),
@@ -977,10 +765,7 @@ const A = {
     const {s, e, sel} = selInfo(), txt = sel || (lang === 'de' ? 'Alternativtext' : 'alt text');
     replaceRange(s, e, `![${txt}](https://)`, s + txt.length + 4, s + txt.length + 12);
   },
-  ul: () => prefixLines(() => '- ', /^\s*[-*+]\s+(?!\[[ xX]\])/),
-  ol: () => prefixLines(i => `${i + 1}. `, /^\s*\d+[.)]\s/),
-  task: () => prefixLines(() => '- [ ] ', /^\s*[-*+]\s+\[[ xX]\]\s/),
-  quote: () => prefixLines(() => '> ', /^\s*>/),
+  ul: () => listCmd('ul'), ol: () => listCmd('ol'), task: () => listCmd('task'), quote: () => listCmd('quote'),
   codeblock: () => { const {sel} = selInfo(); sel ? insertBlock(F + '\n' + sel.replace(/\n$/, '') + '\n' + F) : insertBlock(F + 'js\n// code\n' + F, 6, 7); },
   table: () => {
     const [c, x] = lang === 'de' ? ['Spalte', 'Zelle '] : ['Column', 'Cell  '];
@@ -994,12 +779,12 @@ const A = {
   },
   mathInline: () => wrap('$', '$', 'x^2'),
   mathBlock: () => { const {sel} = selInfo(); sel ? insertBlock('$$\n' + sel + '\n$$') : insertBlock('$$\nE = mc^2\n$$', 3, 8); },
-  toc: () => {
-    render();
+  toc: async () => {
+    await render();
     const hs = outlineHeadings();
     if (!hs.length) return toast(t('toast.noHeadings'));
     const min = Math.min(...hs.map(h => +h.tagName[1]));
-    insertBlock(`**${t('doc.contents')}**\n\n` + hs.map(h => '  '.repeat(h.tagName[1] - min) + `- [${h.textContent.replace(/[[\]]/g, '')}](#${h.id})`).join('\n'));
+    return insertBlock(`**${t('doc.contents')}**\n\n` + hs.map(h => '  '.repeat(h.tagName[1] - min) + `- [${h.textContent.replace(/[[\]]/g, '')}](#${h.id})`).join('\n'));
   },
   date: () => insertAtCursor(new Date().toLocaleDateString(lang, {year: 'numeric', month: 'long', day: 'numeric'})),
   viewEdit: () => setView('edit'), viewSplit: () => setView('split'), viewPreview: () => setView('preview'),
@@ -1361,8 +1146,12 @@ if (window.Native) {
   });
 }
 
+window.__md = {A, ed, render, findNext, replaceAll, countMatches};  // test hook (like Dt's __dt)
+
 /* ================= Boot ================= */
-(function boot() {
+(async function boot() {
+  if (invoke) I18N = await invoke('texts');
+  if (!LIBS_OK) document.body.insertAdjacentHTML('beforeend', `<div class="libfail">${t('libfail')}</div>`);
   let saved = null;
   try { saved = JSON.parse(localStorage.getItem(STORE)); } catch (e) {}
   if (saved && saved.settings) settings = {...DEF, ...saved.settings};

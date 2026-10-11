@@ -1,6 +1,7 @@
 // Hide the console window in release builds on Windows.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod edit;
 mod markdown;
 
 use serde::{Deserialize, Serialize};
@@ -56,6 +57,13 @@ fn load(path: &Path) -> Result<Doc, String> {
 
 fn write(path: &Path, content: &str) -> Result<(), String> {
     fs::write(path, content).map_err(|e| format!("{}: {e}", path.display()))
+}
+
+/// The app's texts in English and German (i18n/*.json, built into the program).
+#[tauri::command]
+fn texts() -> serde_json::Value {
+    let parse = |s: &str| serde_json::from_str::<serde_json::Value>(s).unwrap_or_default();
+    serde_json::json!({"en": parse(include_str!("../i18n/en.json")), "de": parse(include_str!("../i18n/de.json"))})
 }
 
 #[tauri::command]
@@ -270,6 +278,11 @@ fn main() {
             read_file,
             file_stamps,
             markdown::md_render,
+            edit::md_edit,
+            edit::md_in_math,
+            edit::md_find,
+            edit::md_replace_all,
+            texts,
             save_file,
             export_html,
             save_bytes,

@@ -14,6 +14,32 @@ pub struct Rendered {
     /// [tex, display]
     math: Vec<(String, bool)>,
     diagrams: Vec<String>,
+    /// [level, text, source line] of every heading (outline)
+    headings: Vec<(u8, String, usize)>,
+    stats: Stats,
+}
+
+/// Counts for the status bar and the Properties panel.
+#[derive(Serialize, Default)]
+pub struct Stats {
+    words: usize,
+    /// characters as the editor counts them (UTF-16)
+    chars: usize,
+    lines: usize,
+    code: usize,
+    links: usize,
+    images: usize,
+}
+
+/// Words: runs of letters/digits, which may contain ' ’ _ -.
+pub fn count_words(s: &str) -> usize {
+    let mut n = 0;
+    let mut inside = false;
+    for ch in s.chars() {
+        if ch.is_alphanumeric() { if !inside { n += 1; inside = true; } }
+        else if !(inside && matches!(ch, '\'' | '’' | '_' | '-')) { inside = false; }
+    }
+    n
 }
 
 fn options() -> Options {
@@ -83,6 +109,7 @@ pub fn render(src: &str, inline: bool) -> Rendered {
     let mut code_buf = String::new();
     let mut link_depth = 0usize;
     let mut code_depth = 0usize;
+    let mut heading: Option<(u8, String, usize)> = None;
 
     let flush = |group: &mut Vec<Event>, line: usize, out: &mut Rendered| {
         if group.is_empty() { return; }
@@ -96,9 +123,17 @@ pub fn render(src: &str, inline: bool) -> Rendered {
             group_line = line_of(range.start);
         }
         match &ev {
+            Event::Start(Tag::Heading { level, .. }) => heading = Some((*level as u8, String::new(), line_of(range.start))),
+            Event::End(TagEnd::Heading(_)) => { if let Some(h) = heading.take() { out.headings.push((h.0, h.1.trim().to_string(), h.2)); } }
+            Event::Text(t) | Event::Code(t) if heading.is_some() => { if let Some(h) = heading.as_mut() { h.1.push_str(t); } }
+            Event::Start(Tag::Image { .. }) => out.stats.images += 1,
+            _ => {}
+        }
+        match &ev {
             Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced(info))) => {
                 let lang = info.split_whitespace().next().unwrap_or("").to_ascii_lowercase();
                 code_depth += 1;
+                if lang != "math" && lang != "mermaid" { out.stats.code += 1; }
                 if lang == "math" || lang == "mermaid" {
                     in_code = Some(lang);
                     code_buf.clear();
@@ -106,7 +141,7 @@ pub fn render(src: &str, inline: bool) -> Rendered {
                     continue;
                 }
             }
-            Event::Start(Tag::CodeBlock(_)) => code_depth += 1,
+            Event::Start(Tag::CodeBlock(_)) => { code_depth += 1; out.stats.code += 1; }
             Event::End(TagEnd::CodeBlock) => {
                 code_depth = code_depth.saturating_sub(1);
                 if let Some(kind) = in_code.take() {
@@ -153,6 +188,11 @@ pub fn render(src: &str, inline: bool) -> Rendered {
         if depth == 0 { flush(&mut group, group_line, &mut out); }
     }
     flush(&mut group, group_line, &mut out);
+    out.stats.words = count_words(&src);
+    out.stats.chars = src.encode_utf16().count();
+    out.stats.lines = line_starts.len();
+    // Links as shown: written links, bare web addresses and footnote links.
+    out.stats.links = out.html.matches("<a href=").count();
     if inline {
         // One paragraph without its <p> wrapper (short texts in the syntax guide).
         let h = out.html.trim();
@@ -190,6 +230,24 @@ mod tests {
         assert!(!r.html.contains("<a href"), "{}", r.html);
         assert!(r.math.is_empty());
         assert!(r.html.contains("<pre data-line=\"2\"><code class=\"language-js\">"), "{}", r.html);
+    }
+    #[test]
+    fn outline_and_stats() {
+        let r = render("# Eins
+
+Text mit Wörtern, don't stop.
+
+```js
+x
+```
+
+## Zwei *kursiv*
+
+![bild](a.png) [link](b) https://c.de
+", false);
+        assert_eq!(r.headings, vec![(1, "Eins".into(), 0), (2, "Zwei kursiv".into(), 8)]);
+        assert_eq!((r.stats.code, r.stats.images, r.stats.links), (1, 1, 2));
+        assert_eq!(count_words("Text mit Wörtern, don't stop - 2024"), 6);
     }
     #[test]
     fn inline_mode() {
