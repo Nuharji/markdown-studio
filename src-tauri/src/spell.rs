@@ -11,7 +11,7 @@
 use serde::Serialize;
 use spellbook::Dictionary;
 use std::{
-    collections::HashSet,
+    collections::{HashMap, HashSet},
     path::{Path, PathBuf},
     sync::{LazyLock, Mutex, OnceLock},
     time::SystemTime,
@@ -240,50 +240,76 @@ fn grammar(text: &str, words: &[Word<'_>], lang: &str, out: &mut Vec<(usize, usi
 
 /* ---------- Checking ---------- */
 
-/// Checks `text` (only the byte ranges in `parts`, e.g. the prose of a Markdown file). `lang`: "auto", "de" or "en";
-/// `fallback`: the UI language, for paragraphs whose language can't be told.
-pub fn check(app: &AppHandle, text: &str, parts: &[(usize, usize)], lang: &str, fallback: &str) -> Vec<Issue> {
-    let d = dicts(app);
-    let user = user_words(app);
-    let known = |w: &str, l: &str| -> bool {
-        let one = |dict: &Option<Dictionary>| dict.as_ref().is_some_and(|d| d.check(w));
-        match l { "de" => one(&d.de), "en" => one(&d.en), _ => one(&d.de) || one(&d.en) }
-    };
-    let ok = |w: &str| -> bool {
-        let lw = w.to_lowercase();
-        if user.contains(w) || user.contains(&lw) || skip_word(w) || EXTRA.contains(&lw.as_str()) { return true; }
-        let w = w.replace('’', "'");
-        if known(&w, lang) { return true; }
-        // Hyphenated words: fine when every part is ("Rust-Code").
-        w.contains('-') && w.split('-').all(|p| p.is_empty() || skip_word(p) || known(p, lang))
-    };
-    let have_dicts = d.de.is_some() || d.en.is_some();
-    let mut raw: Vec<(usize, usize, &'static str, Vec<String>)> = Vec::new();
-    for &(s, e) in parts {
-        let Some(part) = text.get(s..e) else { continue };
-        // Paragraph by paragraph (blank lines), so the grammar language can differ.
-        let mut off = 0;
-        for para in part.split("\n\n") {
-            let ws = words(para);
-            if have_dicts {
-                for w in &ws { if !ok(w.text) { raw.push((s + off + w.start, s + off + w.end, "spell", vec![])); } }
-            }
-            let gl = if lang == "auto" { detect(&ws, fallback) } else { lang };
-            let mut g = Vec::new();
-            grammar(para, &ws, gl, &mut g);
-            raw.extend(g.into_iter().map(|(a, b, k, f)| (s + off + a, s + off + b, k, f)));
-            off += para.len() + 2;
-        }
-    }
-    raw.sort_by_key(|x| (x.0, x.1));
-    raw.dedup_by(|b, a| a.0 == b.0 && a.1 == b.1);
-    let u16 = utf16_index(text);
-    raw.into_iter().map(|(a, b, kind, fix)| Issue { start: u16(a), end: u16(b), kind, fix }).collect()
+/// A checker with the dictionaries and personal words loaded once — for checking many texts (e.g. table cells).
+/// Words already looked up are remembered.
+pub struct Checker {
+    d: &'static Dicts,
+    user: HashSet<String>,
+    lang: String,
+    fallback: String,
+    memo: HashMap<String, bool>,
 }
 
-/// Byte offset -> UTF-16 offset.
-pub fn utf16_index(text: &str) -> impl Fn(usize) -> usize + '_ {
-    move |b: usize| text[..b.min(text.len())].encode_utf16().count()
+impl Checker {
+    /// `lang`: "auto", "de" or "en"; `fallback`: the UI language, for paragraphs whose language can't be told.
+    pub fn new(app: &AppHandle, lang: &str, fallback: &str) -> Self {
+        Checker { d: dicts(app), user: user_words(app), lang: lang.into(), fallback: fallback.into(), memo: HashMap::new() }
+    }
+
+    fn known(&self, w: &str) -> bool {
+        let one = |dict: &Option<Dictionary>| dict.as_ref().is_some_and(|d| d.check(w));
+        match self.lang.as_str() { "de" => one(&self.d.de), "en" => one(&self.d.en), _ => one(&self.d.de) || one(&self.d.en) }
+    }
+
+    fn ok(&mut self, w: &str) -> bool {
+        if let Some(&r) = self.memo.get(w) { return r; }
+        let lw = w.to_lowercase();
+        let r = self.user.contains(w) || self.user.contains(&lw) || skip_word(w) || EXTRA.contains(&lw.as_str()) || {
+            let a = w.replace('’', "'");
+            // Hyphenated words: fine when every part is ("Rust-Code").
+            self.known(&a) || a.contains('-') && a.split('-').all(|p| p.is_empty() || skip_word(p) || self.known(p))
+        };
+        self.memo.insert(w.to_string(), r);
+        r
+    }
+
+    /// Issues in `text`, only within the byte ranges `parts` (e.g. the prose of a Markdown file).
+    pub fn check(&mut self, text: &str, parts: &[(usize, usize)]) -> Vec<Issue> {
+        let have_dicts = self.d.de.is_some() || self.d.en.is_some();
+        let mut raw: Vec<(usize, usize, &'static str, Vec<String>)> = Vec::new();
+        for &(s, e) in parts {
+            let Some(part) = text.get(s..e) else { continue };
+            // Paragraph by paragraph (blank lines), so the grammar language can differ.
+            let mut off = 0;
+            for para in part.split("
+
+") {
+                let ws = words(para);
+                if have_dicts {
+                    for w in &ws { if !self.ok(w.text) { raw.push((s + off + w.start, s + off + w.end, "spell", vec![])); } }
+                }
+                let gl = if self.lang == "auto" { detect(&ws, &self.fallback) } else { self.lang.as_str() };
+                let mut g = Vec::new();
+                grammar(para, &ws, gl, &mut g);
+                raw.extend(g.into_iter().map(|(a, b, k, f)| (s + off + a, s + off + b, k, f)));
+                off += para.len() + 2;
+            }
+        }
+        raw.sort_by_key(|x| (x.0, x.1));
+        raw.dedup_by(|b, a| a.0 == b.0 && a.1 == b.1);
+        // Byte offsets -> UTF-16 offsets, counting forward once.
+        let (mut byte, mut u16) = (0, 0);
+        raw.into_iter().map(|(a, b, kind, fix)| {
+            if a >= byte { u16 += text[byte..a].encode_utf16().count(); byte = a; } else { u16 -= text[a..byte].encode_utf16().count(); byte = a; }
+            let start = u16;
+            Issue { start, end: start + text[a..b].encode_utf16().count(), kind, fix }
+        }).collect()
+    }
+}
+
+/// Issues in `text` (only the byte ranges in `parts`).
+pub fn check(app: &AppHandle, text: &str, parts: &[(usize, usize)], lang: &str, fallback: &str) -> Vec<Issue> {
+    Checker::new(app, lang, fallback).check(text, parts)
 }
 
 /// Suggestions for a misspelled word (best first).
@@ -292,8 +318,27 @@ pub fn suggest(app: &AppHandle, word: &str, lang: &str) -> Vec<String> {
     let mut out = Vec::new();
     let mut add = |dict: &Option<Dictionary>| { if let Some(dict) = dict { let mut v = Vec::new(); dict.suggest(word, &mut v); for s in v { if !out.contains(&s) { out.push(s); } } } };
     match lang { "de" => add(&d.de), "en" => add(&d.en), _ => { add(&d.de); add(&d.en); } }
+    // Both dictionaries' lists together: the closest words first (ties keep the dictionaries' order).
+    let w: Vec<char> = word.to_lowercase().chars().collect();
+    out.sort_by_cached_key(|s| distance(&w, &s.to_lowercase().chars().collect::<Vec<_>>()));
     out.truncate(8);
     out
+}
+
+/// Edit distance where swapping two neighbouring letters counts as one step ("wrold" → "world").
+fn distance(a: &[char], b: &[char]) -> usize {
+    let (n, m) = (a.len(), b.len());
+    let mut d = vec![vec![0usize; m + 1]; n + 1];
+    for (i, row) in d.iter_mut().enumerate() { row[0] = i; }
+    for j in 0..=m { d[0][j] = j; }
+    for i in 1..=n {
+        for j in 1..=m {
+            let cost = usize::from(a[i - 1] != b[j - 1]);
+            d[i][j] = (d[i - 1][j] + 1).min(d[i][j - 1] + 1).min(d[i - 1][j - 1] + cost);
+            if i > 1 && j > 1 && a[i - 1] == b[j - 2] && a[i - 2] == b[j - 1] { d[i][j] = d[i][j].min(d[i - 2][j - 2] + 1); }
+        }
+    }
+    d[n][m]
 }
 
 #[tauri::command]
@@ -357,6 +402,14 @@ mod tests {
             [("a".into(), "a-an", vec!["an".into()]), ("an".into(), "a-an", vec!["a".into()])]);
         assert_eq!(g("then i said", "en"), [("i".into(), "i", vec!["I".into()])]);
         assert_eq!(g("Siehe Kapitel 3 . Fertig", "de").len(), 1);
+    }
+
+    #[test]
+    fn suggestion_distance() {
+        let c = |s: &str| s.chars().collect::<Vec<_>>();
+        assert_eq!(distance(&c("wrold"), &c("world")), 1);
+        assert_eq!(distance(&c("wrold"), &c("harold")), 2);
+        assert_eq!(distance(&c("tesst"), &c("test")), 1);
     }
 
     #[test]
