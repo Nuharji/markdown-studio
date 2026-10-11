@@ -1,0 +1,2 @@
+# Dictionaries stay byte-for-byte as published (no line-ending conversion).
+src-tauri/dictionaries/** -text

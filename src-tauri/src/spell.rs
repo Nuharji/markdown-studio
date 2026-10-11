@@ -379,3 +379,12 @@ mod tests {
     }
 }
 
+
+#[cfg(test)]
+#[test]
+fn crlf_dictionaries() {
+    let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("dictionaries").join("en");
+    let crlf = |f: &str| std::fs::read_to_string(dir.join(f)).unwrap().replace("\r\n", "\n").replace('\n', "\r\n");
+    let d = Dictionary::new(&crlf("index.aff"), &crlf("index.dic")).expect("parses with CRLF");
+    assert!(d.check("house") && d.check("houses") && !d.check("hous"));
+}
