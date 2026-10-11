@@ -63,7 +63,10 @@ jobs:
           Get-ChildItem "$release/bundle" -Recurse -File -Include *.exe, *.msi, *.AppImage, *.deb, *.dmg | Copy-Item -Destination out
           if ('${{ runner.os }}' -eq 'Windows') {
             $arch = '${{ matrix.name }}'.Replace('windows-', '')
-            Copy-Item "$release/$env:APP_BIN.exe" ("out/{0}_{1}_{2}_portable.exe" -f $env:APP_NAME.Replace(' ', '-'), $version, $arch)
+            $portable = "out/{0}_{1}_{2}_portable.exe" -f $env:APP_NAME.Replace(' ', '-'), $version, $arch
+            Copy-Item "$release/$env:APP_BIN.exe" $portable
+            # The portable .zip carries the spell-check dictionaries next to the program.
+            if (Test-Path src-tauri/dictionaries) { Compress-Archive -Path $portable, src-tauri/dictionaries -DestinationPath ($portable -replace '\.exe$', '.zip') -Force }
           }
           Get-ChildItem out | ForEach-Object { "{0}  {1:N1} MB" -f $_.Name, ($_.Length / 1MB) }
 

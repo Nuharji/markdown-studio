@@ -34,7 +34,9 @@ foreach ($t in $Targets) {
     # Portable: the bare executable (UI is embedded; WebView2 ships with Windows 11).
     $portable = "dist\${product}_${version}_${t}_portable.exe"
     Copy-Item "$release\$($conf.mainBinaryName).exe" $portable -Force
-    Compress-Archive -Path $portable -DestinationPath ($portable -replace '\.exe$', '.zip') -Force
+    # The .zip also carries the spell-check dictionaries (separate files with their own licenses).
+    $items = @($portable); if (Test-Path src-tauri\dictionaries) { $items += 'src-tauri\dictionaries' }
+    Compress-Archive -Path $items -DestinationPath ($portable -replace '\.exe$', '.zip') -Force
 }
 Write-Host "`nBuild output:" -ForegroundColor Green
 Get-ChildItem dist | ForEach-Object { '  {0,-55} {1,8:N1} MB' -f $_.Name, ($_.Length / 1MB) }

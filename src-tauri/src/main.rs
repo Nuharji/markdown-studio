@@ -3,6 +3,7 @@
 
 mod edit;
 mod markdown;
+mod spell;
 
 use serde::{Deserialize, Serialize};
 use std::{
@@ -324,6 +325,11 @@ fn main() {
             read_file,
             file_stamps,
             markdown::md_render,
+            markdown::md_spell,
+            spell::spell_check,
+            spell::spell_suggest,
+            spell::spell_add,
+            spell::spell_ready,
             edit::md_edit,
             edit::md_in_math,
             edit::md_find,

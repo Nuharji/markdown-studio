@@ -43,6 +43,8 @@
     const target = e.target.closest ? e.target.closest('input,textarea') : null;
     field = isField(target) ? target : null;
     const own = provider ? provider(e) : null;
+    // An app may answer later (e.g. spelling suggestions from Rust).
+    if (own && typeof own.then === 'function') { const f = field; own.then(items => items ? show(items) : f && show(fieldItems(f)), () => {}); return; }
     if (own) return show(own);
     if (field) return show(fieldItems(field));
   }, true);

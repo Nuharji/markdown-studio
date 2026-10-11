@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.6.0 — 2026-10-11
+- Spelling & grammar check, German and English, entirely on your PC: misspelled words get a red wavy underline, grammar hints a blue one (doubled words, a small letter after the end of a sentence, spaces before punctuation, several spaces, a missing space after a comma, and in English “a”/“an” and “I”). Code, math, links and HTML are skipped.
+- Right-click an underlined word for suggestions, “Add to dictionary” (a personal dictionary shared by all Studio apps) or “Ignore”. F7 or the status bar jumps to the next issue.
+- Settings → Editor → Spelling & grammar: Automatic (German + English), German, English or Off.
+- The portable .zip now includes the dictionaries (separate files with their own licenses, see dictionaries/README.md); the bare portable .exe has no spell check.
+
 ## 1.5.1 — 2026-10-11
 - HTML export: the page is now put together and saved by the Rust core.
 - Fixed: an HTML export made right after typing could miss the last changes.

@@ -94,7 +94,7 @@ function renderInto(root, r) {
 /* ================= Documents & session ================= */
 const THEMES = ['dark', 'light', 'github', 'github-dark'];
 const DEF = {lang: 'auto', theme: 'dark', view: 'split', split: 50, zoom: 100, sync: true, wrap: true, paper: 'auto', font: 'sans',
-  pagew: 860, edFont: 14, dock: true, dockTab: 'outline'};
+  pagew: 860, edFont: 14, dock: true, dockTab: 'outline', spell: 'auto'};
 let settings = {...DEF}, docs = [], active = 0, untitledN = 1, saveT, rT, booted = false;
 const cur = () => docs[active];
 const blankDoc = (name, content = '', handle = null) =>
@@ -294,6 +294,7 @@ async function render() {
   if (my !== renderSeq) return;
   renderInto(paper, r);
   invalidateSync(); buildOutline(r); updateStats(r);
+  if (spellFor !== ed.value) { drawMarks(); scheduleSpell(spellFor ? 700 : 150); }
 }
 
 /* ================= Status, outline & stats ================= */
@@ -384,6 +385,100 @@ function replaceRange(s, e, text, selS, selE) {
   if (selS != null) ed.setSelectionRange(selS, selE);
   updateCursor();
 }
+/* ================= Spelling & grammar ================= */
+/* Checked in Rust (spell.rs; markdown.rs md_spell checks the prose only — not code, math, HTML or link targets) a
+   moment after typing stops. Issues are drawn as wavy underlines on a transparent copy of the text lying exactly over
+   the editor; right-click one for suggestions, F7 jumps to the next. Nothing leaves the PC. */
+const marksEl = $('#edMarks');
+let spellIssues = [], spellFor = '', spellSeq = 0, spellT = 0, spellLen = 0, dictsMissing = false, ctxIssue = null, ctxFixes = [];
+const ignored = new Set();   // "kind:text" ignored for this session
+const issueText = i => ed.value.slice(i.start, i.end);
+function scheduleSpell(delay = 700) { clearTimeout(spellT); spellT = setTimeout(runSpell, delay); }
+async function runSpell() {
+  const d = cur(), text = ed.value, my = ++spellSeq;
+  if (!invoke || !d || settings.spell === 'off' || text.length > 400000) { spellIssues = []; return drawMarks(); }
+  const list = await invoke('md_spell', {text, lang: settings.spell, fallback: lang}).catch(() => []);
+  if (my !== spellSeq || d !== cur() || text !== ed.value) return;
+  spellIssues = list.filter(i => !ignored.has(i.kind + ':' + text.slice(i.start, i.end)));
+  spellFor = text; drawMarks();
+}
+/* Keeps the copy under the editor in shape (same box, font and wrapping) and draws the underlines. */
+function drawMarks() {
+  if (spellFor !== ed.value) spellIssues = [];
+  spellLen = ed.value.length;
+  updateSpellStatus();
+  if (!spellIssues.length) { marksEl.textContent = ''; return; }
+  const cs = getComputedStyle(ed);
+  Object.assign(marksEl.style, {top: ed.offsetTop + 'px', left: ed.offsetLeft + 'px', width: ed.clientWidth + 'px', height: ed.clientHeight + 'px',
+    padding: cs.padding, fontFamily: cs.fontFamily, fontSize: cs.fontSize, lineHeight: cs.lineHeight, letterSpacing: cs.letterSpacing,
+    tabSize: cs.tabSize, whiteSpace: settings.wrap ? 'pre-wrap' : 'pre', overflowWrap: cs.overflowWrap, wordBreak: cs.wordBreak});
+  const v = ed.value;
+  let h = '', at = 0;
+  spellIssues.forEach((i, k) => {
+    if (i.start < at) return;
+    h += esc(v.slice(at, i.start)) + `<mark class="${i.kind === 'spell' ? 'sp' : 'gr'}" data-k="${k}">${esc(v.slice(i.start, i.end))}</mark>`;
+    at = i.end;
+  });
+  marksEl.innerHTML = h + esc(v.slice(at)) + '\n';
+  marksEl.scrollTop = ed.scrollTop; marksEl.scrollLeft = ed.scrollLeft;
+}
+/* While typing, underlines after the edit move along and the ones at the edit go away until the next check. */
+ed.addEventListener('input', () => {
+  const diff = ed.value.length - spellLen, end = ed.selectionStart, from = end - Math.max(diff, 0), to = from + Math.max(-diff, 0);
+  if (spellIssues.length) {
+    spellIssues = spellIssues.filter(i => i.end < from || i.start > to).map(i => i.start > to ? {...i, start: i.start + diff, end: i.end + diff} : i);
+    spellFor = ed.value;
+    requestAnimationFrame(drawMarks);
+  }
+  spellLen = ed.value.length;
+  scheduleSpell();
+});
+ed.addEventListener('scroll', () => { marksEl.scrollTop = ed.scrollTop; marksEl.scrollLeft = ed.scrollLeft; });
+new ResizeObserver(() => { if (spellIssues.length) drawMarks(); }).observe(ed);
+function updateSpellStatus() {
+  const el = $('#stSpell'), on = !!cur() && settings.spell !== 'off';
+  el.hidden = !on; if (!on) return;
+  el.classList.toggle('has', !!spellIssues.length);
+  el.textContent = dictsMissing ? t('sp.noDicts') : spellIssues.length ? t('sp.count', {n: spellIssues.length}) : t('sp.ok');
+  el.title = dictsMissing ? t('sp.noDictsTip') : t('sp.tip');
+}
+$('#stSpell').addEventListener('click', () => nextIssue());
+function nextIssue() {
+  if (!spellIssues.length) return toast(t('sp.ok'));
+  const i = spellIssues.find(x => x.start >= ed.selectionEnd) || spellIssues[0];
+  ed.focus({preventScroll: true}); ed.setSelectionRange(i.start, i.end); scrollToPos(i.start); updateCursor();
+}
+/* The issue under the mouse (for the context menu). */
+function issueAt(x, y) {
+  for (const m of marksEl.querySelectorAll('mark')) {
+    for (const r of m.getClientRects()) if (x >= r.left && x <= r.right && y >= r.top - 2 && y <= r.bottom + 2) return spellIssues[+m.dataset.k];
+  }
+  return null;
+}
+async function spellMenu(i) {
+  ctxIssue = {...i, text: issueText(i)};
+  if (i.kind === 'spell') {
+    const word = ctxIssue.text;
+    ctxFixes = await invoke('spell_suggest', {word, lang: settings.spell}).catch(() => []);
+    return [...(ctxFixes.length ? ctxFixes.map((s, k) => ({id: 'sp:fix:' + k, label: s})) : [{id: 'sp:none', label: t('sp.noSuggestions'), enabled: false}]),
+      null, {id: 'sp:add', label: t('sp.add', {w: word})}, {id: 'sp:ignore', label: t('sp.ignore')}];
+  }
+  ctxFixes = i.fix;
+  return [{id: 'sp:rule', label: t('sp.rule.' + i.kind), enabled: false},
+    ...i.fix.map((s, k) => ({id: 'sp:fix:' + k, label: t('sp.fix.' + i.kind, {s})})), null, {id: 'sp:ignore', label: t('sp.ignore')}];
+}
+async function spellAction(id) {
+  const i = ctxIssue; if (!i || issueText(i) !== i.text) return;
+  if (id.startsWith('sp:fix:')) replaceRange(i.start, i.end, ctxFixes[+id.slice(7)]);
+  else if (id === 'sp:add') {
+    await invoke('spell_add', {word: i.text}).catch(e => toast(String(e)));
+    spellIssues = spellIssues.filter(x => !(x.kind === 'spell' && issueText(x) === i.text)); drawMarks();
+  } else if (id === 'sp:ignore') {
+    ignored.add(i.kind + ':' + i.text);
+    spellIssues = spellIssues.filter(x => !(x.kind === i.kind && issueText(x) === i.text)); drawMarks();
+  }
+}
+
 const selInfo = () => ({s: ed.selectionStart, e: ed.selectionEnd, v: ed.value, sel: ed.value.slice(ed.selectionStart, ed.selectionEnd)});
 
 /* Formatting commands are computed in Rust (edit.rs): it answers with one edit, which is applied here so Ctrl+Z works. */
@@ -723,6 +818,7 @@ let toastT;
 function toast(msg) { const el = $('#toast'); el.textContent = msg; el.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('show'), 2400); }
 
 const A = {
+  nextIssue: () => nextIssue(),
   newDoc: () => openDoc(null, ''),
   openFile, save: () => save(false), reloadFile, saveAs: () => save(true), exportHtml,
   print: async () => {
@@ -814,7 +910,7 @@ const A = {
 const MENUS = [
   ['file', [['newDoc', 'Alt+N'], ['openFile', 'Ctrl+O'], '-', ['save', 'Ctrl+S'], ['saveAs', 'Ctrl+Shift+S'], ['reloadFile', 'F5'], '-',
     ['exportHtml', 'Ctrl+E'], ['print', 'Ctrl+P'], '-', ['closeTab', 'Alt+W']]],
-  ['edit', [['undo', 'Ctrl+Z', null, true], ['redo', 'Ctrl+Y', null, true], '-', ['find', 'Ctrl+F'], ['findNext', 'F3'], '-',
+  ['edit', [['undo', 'Ctrl+Z', null, true], ['redo', 'Ctrl+Y', null, true], '-', ['find', 'Ctrl+F'], ['findNext', 'F3'], ['nextIssue', 'F7'], '-',
     ['selectAll', 'Ctrl+A', null, true]]],
   ['insert', [['h1', 'Ctrl+Shift+1'], ['h2', 'Ctrl+Shift+2'], ['h3', 'Ctrl+Shift+3'], ['para', 'Ctrl+Shift+0'], '-',
     ['bold', 'Ctrl+B'], ['italic', 'Ctrl+I'], ['strike', 'Ctrl+Shift+X'], ['code', 'Ctrl+`'], ['link', 'Ctrl+K'], ['image', 'Ctrl+Shift+G'], '-',
@@ -936,7 +1032,8 @@ function renderSettings() {
          <div class="theme-name">${esc(t('theme.' + th))}<span>${settings.theme === th ? '&#10003;' : ''}</span></div></button>`).join('') + `</div>
       <h3>${t('set.paper')}</h3><p class="hint">${t('set.paperHint')}</p>
       ${seg('paper', [['auto', t('set.paperAuto')], ['light', t('set.light')], ['dark', t('set.dark')]], settings.paper)}`,
-    editor: `${range('edFont', t('set.edFont'), 11, 22, 1, ' px')}<h3>${t('set.behavior')}</h3>${sw('wrap', t('set.wrap'))}${sw('sync', t('set.sync'))}`,
+    editor: `${range('edFont', t('set.edFont'), 11, 22, 1, ' px')}<h3>${t('set.behavior')}</h3>${sw('wrap', t('set.wrap'))}${sw('sync', t('set.sync'))}
+      <h3>${t('set.spell')}</h3><p class="hint">${t('set.spellHint')}</p><select class="wide-sel" data-sel="spell">${opt('auto', t('set.spellAuto'), settings.spell)}${opt('de', 'Deutsch', settings.spell)}${opt('en', 'English', settings.spell)}${opt('off', t('set.spellOff'), settings.spell)}</select>`,
     preview: `<h3>${t('set.font')}</h3><select class="wide-sel" data-sel="font">${opt('sans', t('set.sans'), settings.font)}${opt('serif', t('set.serif'), settings.font)}</select>
       ${range('pagew', t('set.pageWidth'), 560, 1240, 20, ' px')}${range('zoom', t('set.zoom'), 50, 200, 10, '%')}`
   };
@@ -980,9 +1077,9 @@ function applyLanguage() {
   $('#splitter').title = t('ui.resize');
   buildMenubar(); buildToolbars();
   cardsBuilt = false;
-  if (booted) { renderTabs(); updateTitle(); render(); updateCursor(); renderRecent(); syncDisabled(); }
+  if (booted) { renderTabs(); updateTitle(); render(); updateCursor(); renderRecent(); syncDisabled(); updateSpellStatus(); }
 }
-let lastMermaidTheme = null;
+let lastMermaidTheme = null, lastSpell = null;
 function applySettings() {
   invalidateSync();
   if (!THEMES.includes(settings.theme)) settings.theme = 'dark';
@@ -1007,6 +1104,7 @@ function applySettings() {
   $('#hljsLight').disabled = dark; $('#hljsDark').disabled = !dark;
   $('[data-act="togglePaper"]').innerHTML = dark ? ICONS.moon : ICONS.sun;
   ed.style.fontSize = settings.edFont + 'px';
+  if (settings.spell !== lastSpell) { lastSpell = settings.spell; spellFor = ''; scheduleSpell(50); } else requestAnimationFrame(drawMarks);
   ed.wrap = settings.wrap ? 'soft' : 'off';
   ed.style.whiteSpace = settings.wrap ? 'pre-wrap' : 'pre';
   $('#dock').classList.toggle('hidden', !settings.dock);
@@ -1112,6 +1210,8 @@ if (window.Native) {
       return [{id: 'tab:close', label: t('a.closeTab'), accel: 'Alt+W'}, {id: 'tab:others', label: t('ctx.closeOthers'), enabled: docs.length > 1}];
     }
     if (e.target === ed && cur()) {
+      const hit = issueAt(e.clientX, e.clientY);
+      if (hit) return spellMenu(hit).then(items => [...items, null, ...Native.fieldItems(ed)]);
       return [...Native.fieldItems(ed), null, item('bold'), item('italic'), item('strike'), item('code'), item('link'), null,
         item('table'), item('codeblock'), item('mathInline'), item('mathBlock'), item('diagram')];
     }
@@ -1126,17 +1226,20 @@ if (window.Native) {
   Native.setHandler(async id => {
     if (id === 'tab:close') return closeTab(ctxTab);
     if (id === 'tab:others') { const keep = docs[ctxTab]; for (const d of [...docs]) if (d !== keep) await closeTab(docs.indexOf(d)); return; }
+    if (id.startsWith('sp:')) return spellAction(id);
     if (id.startsWith('dg:')) { const b = ctxDiagram && ctxDiagram.querySelector(`[data-dg="${id.slice(3)}"]`); if (b) b.click(); return; }
     run(id);
   });
 }
 
-window.__md = {A, ed, render, findNext, replaceAll, countMatches};  // test hook (like Dt's __dt)
+window.__md = {A, ed, runSpell, spellIssues: () => spellIssues, issueAt, spellMenu, spellAction, nextIssue, render, findNext, replaceAll, countMatches};  // test hook (like Dt's __dt)
 
 /* ================= Boot ================= */
 (async function boot() {
   if (invoke) I18N = await invoke('texts');
   if (!LIBS_OK) document.body.insertAdjacentHTML('beforeend', `<div class="libfail">${t('libfail')}</div>`);
+  // Loads the dictionaries in the background, so the first check is quick.
+  if (invoke) invoke('spell_ready').then(([de, en]) => { dictsMissing = !de && !en; updateSpellStatus(); }).catch(() => {});
   let saved = null;
   try { saved = JSON.parse(localStorage.getItem(STORE)); } catch (e) {}
   if (saved && saved.settings) settings = {...DEF, ...saved.settings};

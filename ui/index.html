@@ -266,7 +266,12 @@ select:focus,input:focus{border-color:var(--accent)}
 
 /* Workspace */
 .workspace{flex:1;display:flex;min-height:0;background:var(--editor-bg);overflow:clip}
-.editor-pane{flex:0 0 50%;display:flex;flex-direction:column;min-width:0}
+.editor-pane{flex:0 0 50%;display:flex;flex-direction:column;min-width:0;position:relative}
+/* Spelling: a transparent copy of the text over the editor carries the underlines */
+.ed-marks{position:absolute;box-sizing:border-box;overflow:hidden;pointer-events:none;color:transparent;margin:0;border:0}
+.ed-marks mark{background:none;color:transparent;text-decoration:underline wavy;text-decoration-thickness:1.5px;text-underline-offset:3px;text-decoration-skip-ink:none}
+.ed-marks mark.sp{text-decoration-color:#e5484d}.ed-marks mark.gr{text-decoration-color:#3d8ee8}
+.st-spell{cursor:pointer}.st-spell.has{color:#e5a100}
 .preview-pane{flex:1;display:flex;flex-direction:column;min-width:0}
 .pane-head{height:24px;flex:none;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--dim);padding:0 14px;
   display:flex;align-items:center;gap:8px;background:var(--pane-head);border-bottom:1px solid var(--line)}
@@ -453,6 +458,7 @@ input[type=range]{width:100%;max-width:360px;accent-color:var(--accent)}
       <div class="editor-pane" id="edPane">
         <div class="pane-head" data-i18n="ui.source"></div>
         <textarea id="editor" spellcheck="false" data-i18n-ph="ui.placeholder"></textarea>
+        <div class="ed-marks" id="edMarks" aria-hidden="true"></div>
       </div>
       <div class="splitter" id="splitter"></div>
       <div class="preview-pane">
@@ -518,7 +524,7 @@ input[type=range]{width:100%;max-width:360px;accent-color:var(--accent)}
   <span id="stState" class="st-state"></span>
   <span id="stPos"></span>
   <span class="flex"></span>
-  <span id="stWords"></span><span id="stChars"></span><span id="stRead"></span>
+  <span id="stSpell" class="st-spell" role="button" hidden></span><span id="stWords"></span><span id="stChars"></span><span id="stRead"></span>
   <span>UTF-8 · Markdown + LaTeX</span>
   <span class="zoom"><button id="zOut" data-i18n-title="a.zoomOut">&minus;</button><button id="zVal" data-i18n-title="a.zoomReset">100%</button><button id="zIn" data-i18n-title="a.zoomIn">+</button></span>
 </footer>

@@ -97,6 +97,37 @@ fn tag_line(html: &str, line: usize) -> String {
     }
 }
 
+/// The prose of a Markdown source for spell checking: byte ranges of its text — not code, math, HTML or link targets.
+pub fn prose(src: &str) -> Vec<(usize, usize)> {
+    let mut out: Vec<(usize, usize)> = Vec::new();
+    let mut code = 0usize;
+    // Keys and code written as HTML (<kbd>Strg+S</kbd>, <code>…</code>) aren't prose either.
+    let tag = |h: &str, close: bool| {
+        let h = h.trim().to_ascii_lowercase();
+        ["kbd", "code", "samp", "var", "pre"].iter().any(|t| h.starts_with(&format!("<{}{t}", if close { "/" } else { "" })))
+    };
+    for (ev, r) in Parser::new_ext(src, options()).into_offset_iter() {
+        match ev {
+            Event::Start(Tag::CodeBlock(_)) => code += 1,
+            Event::End(TagEnd::CodeBlock) => code = code.saturating_sub(1),
+            Event::InlineHtml(ref h) | Event::Html(ref h) if tag(h, false) => code += 1,
+            Event::InlineHtml(ref h) | Event::Html(ref h) if tag(h, true) => code = code.saturating_sub(1),
+            Event::Text(_) if code == 0 => match out.last_mut() {
+                Some(last) if last.1 == r.start => last.1 = r.end,
+                _ => out.push((r.start, r.end)),
+            },
+            _ => {}
+        }
+    }
+    out
+}
+
+/// Spelling and grammar issues of a Markdown document (spell.rs), prose only.
+#[tauri::command]
+pub async fn md_spell(app: tauri::AppHandle, text: String, lang: String, fallback: String) -> Vec<crate::spell::Issue> {
+    crate::spell::check(&app, &text, &prose(&text), &lang, &fallback)
+}
+
 pub fn render(src: &str, inline: bool) -> Rendered {
     let src = src.replace("\r\n", "\n");
     let line_starts: Vec<usize> = std::iter::once(0).chain(src.match_indices('\n').map(|(i, _)| i + 1)).collect();
@@ -231,6 +262,19 @@ mod tests {
         assert!(r.math.is_empty());
         assert!(r.html.contains("<pre data-line=\"2\"><code class=\"language-js\">"), "{}", r.html);
     }
+    #[test]
+    fn prose_ranges() {
+        let src = "Text with `code` and <kbd>Strg+S</kbd> end.
+
+```js
+let barr;
+```
+
+[link text](https://exampel.com) $x^2$";
+        let parts: Vec<&str> = prose(src).iter().map(|&(a, b)| &src[a..b]).collect();
+        assert_eq!(parts, ["Text with ", " and ", " end.", "link text", " "]);
+    }
+
     #[test]
     fn outline_and_stats() {
         let r = render("# Eins

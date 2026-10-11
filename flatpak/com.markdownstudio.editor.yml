@@ -22,6 +22,8 @@ modules:
       - ar -x app.deb
       - tar -xf data.tar.*
       - install -Dm755 usr/bin/markdown-studio /app/bin/markdown-studio
+      # resources such as the spell-check dictionaries (usr/lib/<app>/…)
+      - if [ -d usr/lib ]; then mkdir -p /app/lib && cp -r usr/lib/. /app/lib/; fi
       - |
         desktop=$(ls usr/share/applications/*.desktop | head -n1)
         sed -e 's/^Icon=.*/Icon=com.markdownstudio.editor/' "$desktop" > com.markdownstudio.editor.desktop
