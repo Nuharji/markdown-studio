@@ -93,7 +93,7 @@ function renderInto(root, r) {
 
 /* ================= Documents & session ================= */
 const THEMES = ['dark', 'light', 'github', 'github-dark'];
-const DEF = {lang: 'auto', theme: 'dark', view: 'split', split: 50, zoom: 100, sync: true, wrap: true, paper: 'auto', font: 'sans',
+const DEF = {autoHide: false, lang: 'auto', theme: 'dark', view: 'split', split: 50, zoom: 100, sync: true, wrap: true, paper: 'auto', font: 'sans',
   pagew: 860, edFont: 14, dock: true, dockTab: 'outline', spell: 'auto'};
 let settings = {...DEF}, docs = [], active = 0, untitledN = 1, saveT, rT, booted = false;
 const cur = () => docs[active];
@@ -136,7 +136,7 @@ $('#recent').addEventListener('click', async e => {
 });
 
 /* Actions that make sense with no document open; everything else is disabled on the start screen. */
-const NO_DOC = new Set(['newDoc', 'openFile', 'settings', 'langAuto', 'langEn', 'langDe', 'themeDark', 'themeLight', 'themeGithub',
+const NO_DOC = new Set(['toggleAutoHide', 'newDoc', 'openFile', 'settings', 'langAuto', 'langEn', 'langDe', 'themeDark', 'themeLight', 'themeGithub',
   'themeGithubDark', 'openGuide', 'refMd', 'refLatex', 'shortcuts', 'about', 'togglePanels', 'toggleSync', 'toggleWrap', 'togglePaper',
   'zoomIn', 'zoomOut', 'zoomReset', 'viewEdit', 'viewSplit', 'viewPreview']);
 const allowed = act => !!cur() || NO_DOC.has(act);
@@ -818,6 +818,7 @@ let toastT;
 function toast(msg) { const el = $('#toast'); el.textContent = msg; el.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('show'), 2400); }
 
 const A = {
+  toggleAutoHide: () => { settings.autoHide = !settings.autoHide; applySettings(); },
   nextIssue: () => nextIssue(),
   newDoc: () => openDoc(null, ''),
   openFile, save: () => save(false), reloadFile, saveAs: () => save(true), exportHtml,
@@ -919,7 +920,7 @@ const MENUS = [
     ['mathInline', 'Ctrl+M'], ['mathBlock', 'Ctrl+Shift+M'], '-', ['toc'], ['date']]],
   ['view', [['viewEdit', 'Alt+1', () => settings.view === 'edit'], ['viewSplit', 'Alt+2', () => settings.view === 'split'],
     ['viewPreview', 'Alt+3', () => settings.view === 'preview'], '-',
-    ['togglePanels', 'Ctrl+\\', () => settings.dock], ['toggleSync', null, () => settings.sync],
+    ['togglePanels', 'Ctrl+\\', () => settings.dock], ['toggleAutoHide', null, () => settings.autoHide], ['toggleSync', null, () => settings.sync],
     ['toggleWrap', null, () => settings.wrap], ['togglePaper', null, isPaperDark], '-',
     ['zoomIn'], ['zoomOut'], ['zoomReset']]],
   ['settings', [['settings', 'Ctrl+,'], '-', '#menu.language',
@@ -1026,7 +1027,7 @@ function renderSettings() {
   const body = {
     general: `<h3>${t('set.language')}</h3><p class="hint">${t('set.languageHint')}</p>
       <select class="wide-sel" data-sel="lang">${opt('auto', t('a.langAuto'), settings.lang)}${opt('en', 'English', settings.lang)}${opt('de', 'Deutsch', settings.lang)}</select>
-      <h3>${t('set.layout')}</h3>${sw('dock', t('set.panels'))}`,
+      <h3>${t('set.layout')}</h3>${sw('dock', t('set.panels'))}${sw('autoHide', t('set.autoHide'))}`,
     appearance: `<h3>${t('set.theme')}</h3><div class="theme-grid">` + THEMES.map(th =>
         `<button class="theme-card${settings.theme === th ? ' active' : ''}" data-theme-pick="${th}">${mock(th)}
          <div class="theme-name">${esc(t('theme.' + th))}<span>${settings.theme === th ? '&#10003;' : ''}</span></div></button>`).join('') + `</div>
@@ -1081,6 +1082,7 @@ function applyLanguage() {
 }
 let lastMermaidTheme = null, lastSpell = null;
 function applySettings() {
+  if (window.AutoHide) AutoHide.set(settings.autoHide);
   invalidateSync();
   if (!THEMES.includes(settings.theme)) settings.theme = 'dark';
   const nl = effectiveLang();

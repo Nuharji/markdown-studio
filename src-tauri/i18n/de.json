@@ -240,5 +240,7 @@
   "sp.fix.spaces": "Ein Leerzeichen",
   "sp.fix.comma-space": "Leerzeichen einfügen",
   "sp.fix.a-an": "„{s}“ schreiben",
-  "sp.fix.i": "„I“ schreiben"
+  "sp.fix.i": "„I“ schreiben",
+  "a.toggleAutoHide": "Leisten automatisch ausblenden",
+  "set.autoHide": "Leisten automatisch ausblenden — sie erscheinen am Bildschirmrand (Alt zeigt die oberen Leisten)"
 }

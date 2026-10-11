@@ -240,5 +240,7 @@
   "sp.fix.spaces": "Use one space",
   "sp.fix.comma-space": "Add a space",
   "sp.fix.a-an": "Write “{s}”",
-  "sp.fix.i": "Write “I”"
+  "sp.fix.i": "Write “I”",
+  "a.toggleAutoHide": "Auto-Hide Bars",
+  "set.autoHide": "Hide the bars automatically — they slide in at the screen edge (Alt shows the top bars)"
 }

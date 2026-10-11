@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.7.0 — 2026-10-11
+- New: Auto-hide bars (View menu, or Settings → General). The menu bar, toolbar, tool rail and status bar leave the window and slide in when the mouse touches their edge; they stay while a menu is open or you type in them. Alt alone shows the top bars (Escape or a click elsewhere hides them).
+
 ## 1.6.1 — 2026-10-11
 - Spelling suggestions: the closest words come first, from both dictionaries (e.g. “wrold” → “world”).
 - Faster checking of long documents.
