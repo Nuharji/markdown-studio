@@ -242,5 +242,14 @@
   "sp.fix.a-an": "„{s}“ schreiben",
   "sp.fix.i": "„I“ schreiben",
   "a.toggleAutoHide": "Leisten automatisch ausblenden",
-  "set.autoHide": "Leisten automatisch ausblenden — sie erscheinen am Bildschirmrand (Alt zeigt die oberen Leisten)"
+  "set.autoHide": "Leisten automatisch ausblenden — sie erscheinen am Bildschirmrand (Alt zeigt die oberen Leisten)",
+  "set.keys": "Tastenkürzel",
+  "keys.hint": "Klicke auf ein Kürzel und drücke die neuen Tasten (mit Strg oder Alt, oder eine F-Taste). Esc bricht ab, Rücktaste entfernt das Kürzel.",
+  "keys.search": "Befehl oder Taste suchen",
+  "keys.resetAll": "Alle zurücksetzen",
+  "keys.reset": "Zurücksetzen",
+  "keys.press": "Tasten drücken …",
+  "keys.needMod": "Bitte mit Strg oder Alt kombinieren (oder eine F-Taste nehmen) — sonst stört das Kürzel beim Tippen.",
+  "keys.taken": "{k} gehörte zu „{a}“ — dort entfernt.",
+  "keys.fixed": "{k} ist fest für „{a}“ vergeben."
 }

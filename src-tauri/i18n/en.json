@@ -242,5 +242,14 @@
   "sp.fix.a-an": "Write “{s}”",
   "sp.fix.i": "Write “I”",
   "a.toggleAutoHide": "Auto-Hide Bars",
-  "set.autoHide": "Hide the bars automatically — they slide in at the screen edge (Alt shows the top bars)"
+  "set.autoHide": "Hide the bars automatically — they slide in at the screen edge (Alt shows the top bars)",
+  "set.keys": "Shortcuts",
+  "keys.hint": "Click a shortcut and press the new keys (with Ctrl or Alt, or a function key). Esc cancels, Backspace removes the shortcut.",
+  "keys.search": "Search command or key",
+  "keys.resetAll": "Reset all",
+  "keys.reset": "Reset",
+  "keys.press": "Press keys …",
+  "keys.needMod": "Please combine with Ctrl or Alt (or use a function key) — otherwise the shortcut gets in the way of typing.",
+  "keys.taken": "{k} belonged to “{a}” — removed there.",
+  "keys.fixed": "{k} is reserved for “{a}”."
 }

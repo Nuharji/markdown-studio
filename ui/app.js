@@ -93,7 +93,7 @@ function renderInto(root, r) {
 
 /* ================= Documents & session ================= */
 const THEMES = ['dark', 'light', 'github', 'github-dark'];
-const DEF = {autoHide: false, lang: 'auto', theme: 'dark', view: 'split', split: 50, zoom: 100, sync: true, wrap: true, paper: 'auto', font: 'sans',
+const DEF = {keys: {}, autoHide: false, lang: 'auto', theme: 'dark', view: 'split', split: 50, zoom: 100, sync: true, wrap: true, paper: 'auto', font: 'sans',
   pagew: 860, edFont: 14, dock: true, dockTab: 'outline', spell: 'auto'};
 let settings = {...DEF}, docs = [], active = 0, untitledN = 1, saveT, rT, booted = false;
 const cur = () => docs[active];
@@ -931,7 +931,12 @@ const MENUS = [
   ['help', [['openGuide', 'F1'], ['refMd'], ['refLatex'], ['shortcuts'], '-', ['about']]]
 ];
 const KEYMAP = {};
-MENUS.forEach(([, items]) => items.forEach(it => { if (Array.isArray(it) && it[1] && !it[3]) KEYMAP[it[1]] = it[0]; }));
+/* Built from the menu entries — again whenever a shortcut is changed in Settings (shortcuts.js). */
+function buildKeymap() {
+  for (const m of [KEYMAP]) for (const k in m) delete m[k];
+  MENUS.forEach(([, items]) => items.forEach(it => { if (Array.isArray(it) && it[1] && !it[3]) KEYMAP[it[1]] = it[0]; }));
+}
+buildKeymap();
 
 let menuOpen = null;
 function openMenu(m, items) {
@@ -1025,6 +1030,7 @@ function renderSettings() {
     <div class="tc-body"><div class="tc-rail"></div><div class="tc-ed"><i></i><i style="width:70%"></i><i style="width:85%"></i><i style="width:50%"></i><i style="width:75%"></i></div>
     <div class="tc-pv"><div class="tc-paper"><i></i><i></i><i style="width:80%"></i><i style="width:60%"></i><i style="width:90%"></i></div></div><div class="tc-dock"></div></div></div>`;
   const body = {
+    keys: `<div id="keysBox"></div>`,
     general: `<h3>${t('set.language')}</h3><p class="hint">${t('set.languageHint')}</p>
       <select class="wide-sel" data-sel="lang">${opt('auto', t('a.langAuto'), settings.lang)}${opt('en', 'English', settings.lang)}${opt('de', 'Deutsch', settings.lang)}</select>
       <h3>${t('set.layout')}</h3>${sw('dock', t('set.panels'))}${sw('autoHide', t('set.autoHide'))}`,
@@ -1038,11 +1044,12 @@ function renderSettings() {
     preview: `<h3>${t('set.font')}</h3><select class="wide-sel" data-sel="font">${opt('sans', t('set.sans'), settings.font)}${opt('serif', t('set.serif'), settings.font)}</select>
       ${range('pagew', t('set.pageWidth'), 560, 1240, 20, ' px')}${range('zoom', t('set.zoom'), 50, 200, 10, '%')}`
   };
-  const sections = ['general', 'appearance', 'editor', 'preview'];
+  const sections = ['general', 'appearance', 'editor', 'preview', 'keys'];
   $('#modalTitle').textContent = t('set.title');
   $('#modalBody').innerHTML = `<div class="prefs"><nav>${sections.map(k =>
     `<button data-sec="${k}" class="${k === prefsSection ? 'active' : ''}">${esc(t('set.' + k))}</button>`).join('')}</nav>
     <section>${body[prefsSection]}</section></div>`;
+  if (prefsSection === 'keys') mountKeys();
   $('#modalFoot').innerHTML = `<button class="btn-sm" data-pref="reset">${esc(t('set.reset'))}</button><span class="flex"></span>
     <button class="btn-sm primary" data-pref="done">${esc(t('set.done'))}</button>`;
 }
@@ -1081,8 +1088,19 @@ function applyLanguage() {
   if (booted) { renderTabs(); updateTitle(); render(); updateCursor(); renderRecent(); syncDisabled(); updateSpellStatus(); }
 }
 let lastMermaidTheme = null, lastSpell = null;
+let appliedKeys = '{}';
+/* Settings → Shortcuts: change a key by pressing it (shortcuts.js). */
+function mountKeys() {
+  Shortcuts.editor($('#keysBox'), {MENUS, keys: settings.keys || {}, t, fmtKey, comboOf, label: a => t('a.' + a),
+    onChange: keys => { settings.keys = keys; applySettings(); }});
+}
 function applySettings() {
   if (window.AutoHide) AutoHide.set(settings.autoHide);
+  if (window.Shortcuts && JSON.stringify(settings.keys || {}) !== appliedKeys) {
+    appliedKeys = JSON.stringify(settings.keys || {});
+    Shortcuts.apply(MENUS, settings.keys || {}); buildKeymap();
+    if (typeof buildToolbars === 'function' && document.querySelector('#menus')) buildToolbars();
+  }
   invalidateSync();
   if (!THEMES.includes(settings.theme)) settings.theme = 'dark';
   const nl = effectiveLang();
@@ -1190,6 +1208,7 @@ function comboOf(e) {
   return (e.ctrlKey || e.metaKey ? 'Ctrl+' : '') + (e.shiftKey ? 'Shift+' : '') + (e.altKey ? 'Alt+' : '') + k;
 }
 window.addEventListener('keydown', e => {
+  if (window.Shortcuts && Shortcuts.recording) return;   // Settings → Shortcuts is taking a key
   if (e.key === 'Escape') {
     if ($('#modal').classList.contains('show')) closeModal();
     else if (menuOpen) closeMenus();
