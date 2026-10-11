@@ -112,7 +112,7 @@ function storeCurrent() {
 function saveNow() {
   storeCurrent();
   try { localStorage.setItem(STORE, JSON.stringify({
-    docs: docs.map(d => ({name: d.name, content: d.content, dirty: d.dirty, sel: d.sel,
+    docs: docs.map(d => ({name: d.name, content: d.content, dirty: d.dirty, sel: d.sel, fmt: d.fmt || null,
       path: typeof d.handle === 'string' ? d.handle : null})), active, settings, untitledN, recent})); } catch (e) {}
 }
 function saveSession() { clearTimeout(saveT); saveT = setTimeout(saveNow, 300); }
@@ -192,9 +192,9 @@ async function checkDisk() {
       const first = d.stamp == null;
       d.stamp = s;
       let f; try { f = await invoke('read_file', {path: d.handle}); } catch (e) { continue; }
-      if (f.content === d.content) { d.disk = f.content; continue; }
+      if (f.content === d.content) { d.disk = f.content; d.fmt = f.fmt; continue; }
       if (d === cur()) storeCurrent();
-      if (!d.dirty) { replaceContent(d, f.content); if (!first) toast(t('toast.reloaded', {name: d.name})); }
+      if (!d.dirty) { replaceContent(d, f.content); d.fmt = f.fmt; if (!first) toast(t('toast.reloaded', {name: d.name})); }
       else if (f.content !== d.disk) { d.disk = f.content; toast(t('toast.changedOutside', {name: d.name})); }
     }
   } finally { checking = false; }
@@ -205,9 +205,9 @@ async function reloadFile() {
   if (!onDisk(d)) return toast(t('toast.notOnDisk', {name: d.name}));
   storeCurrent();
   let f; try { f = await invoke('read_file', {path: d.handle}); } catch (e) { return toast(t('toast.missing', {name: d.name})); }
-  if (f.content === d.content) { d.dirty = false; renderTabs(); updateTitle(); return toast(t('toast.upToDate', {name: d.name})); }
+  if (f.content === d.content) { d.fmt = f.fmt; d.dirty = false; renderTabs(); updateTitle(); return toast(t('toast.upToDate', {name: d.name})); }
   if (d.dirty && !await ask(t('confirm.reload', {name: d.name}))) return;
-  replaceContent(d, f.content); stampOf(d);
+  replaceContent(d, f.content); d.fmt = f.fmt; stampOf(d);
   toast(t('toast.reloaded', {name: d.name}));
 }
 window.addEventListener('focus', checkDisk);
@@ -224,13 +224,14 @@ function openDoc(name, content, handle = null) {
   loadActive();
   return d;
 }
-// Native files arrive from Rust as {path, name, content}.
+/* Native files arrive from Rust as {path, name, content, fmt}: content with LF line endings, fmt = how the file is
+   stored (encoding, BOM, line endings), so saving writes it back the same way (Rust: decode_text / encode_text). */
 /* Large documents take a moment for their preview: the loading bar (loadbar.js) shows it until the first rendering. */
 let renderJob = null;
 const openNative = list => list.forEach(f => {
   addRecent(f.path, f.name);
   if (window.LoadBar && (f.content || '').length > 200000) { if (renderJob) renderJob.done(); renderJob = LoadBar.start(f.name).step(t('load.render'), 0, 1, {busy: true}); }
-  const d = openDoc(f.name, f.content, f.path); stampOf(d);
+  const d = openDoc(f.name, f.content, f.path); d.fmt = f.fmt || null; stampOf(d);
 });
 async function ask(message) {
   return invoke
@@ -598,10 +599,13 @@ async function save(as) {
   const d = cur();
   if (invoke) {
     try {
-      const r = await invoke('save_file', {path: as ? null : d.handle, suggestedName: d.name, content: d.content});
+      const r = await invoke('save_file', {path: as ? null : d.handle, suggestedName: d.name, content: d.content, fmt: d.fmt || null});
       if (!r) return;
+      // A Windows-1252 file with characters that encoding can't hold (e.g. emoji) is saved as UTF-8 instead.
+      const fellBack = !!d.fmt && d.fmt.encoding !== r.fmt.encoding;
+      d.fmt = r.fmt;
       d.handle = r.path; d.name = r.name; addRecent(r.path, r.name); d.disk = d.content; stampOf(d);
-      markDirty(false); renderTabs(); toast(t('toast.saved', {name: d.name}));
+      markDirty(false); renderTabs(); toast(t(fellBack ? 'toast.savedUtf8' : 'toast.saved', {name: d.name}));
     } catch (e) { toast(t('toast.saveFail', {e})); }
     return;
   }
@@ -1260,7 +1264,7 @@ if (window.Native) {
   });
 }
 
-window.__md = {openNative, A, ed, runSpell, spellIssues: () => spellIssues, issueAt, spellMenu, spellAction, nextIssue, render, findNext, replaceAll, countMatches};  // test hook (like Dt's __dt)
+window.__md = {docs: () => docs, cur, openNative, A, ed, runSpell, spellIssues: () => spellIssues, issueAt, spellMenu, spellAction, nextIssue, render, findNext, replaceAll, countMatches};  // test hook (like Dt's __dt)
 
 /* ================= Boot ================= */
 (async function boot() {
@@ -1277,7 +1281,7 @@ window.__md = {openNative, A, ed, runSpell, spellIssues: () => spellIssues, issu
   if (saved && Array.isArray(saved.docs)) {
     // A saved session with no documents opens on the start screen.
     untitledN = saved.untitledN || 1;
-    docs = saved.docs.map(d => ({...blankDoc(d.name, d.content, invoke ? d.path : null), dirty: !!d.dirty, sel: d.sel || [0, 0]}));
+    docs = saved.docs.map(d => ({...blankDoc(d.name, d.content, invoke ? d.path : null), dirty: !!d.dirty, sel: d.sel || [0, 0], fmt: d.fmt || null}));
     active = Math.min(saved.active || 0, docs.length - 1);
   } else {
     docs = [blankDoc(lang === 'de' ? 'Willkommen.md' : 'Welcome.md', $('#welcome-' + lang).textContent.trim() + '\n')];

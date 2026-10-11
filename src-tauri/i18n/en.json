@@ -252,5 +252,6 @@
   "keys.needMod": "Please combine with Ctrl or Alt (or use a function key) — otherwise the shortcut gets in the way of typing.",
   "keys.taken": "{k} belonged to “{a}” — removed there.",
   "keys.fixed": "{k} is reserved for “{a}”.",
-  "load.render": "Building the preview"
+  "load.render": "Building the preview",
+  "toast.savedUtf8": "Saved “{name}” as UTF-8: some characters don’t fit its previous encoding (Windows-1252)."
 }

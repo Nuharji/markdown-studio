@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.9.1 — 2026-10-11
+- Fixed: files that are not UTF-8 (older Windows files in Windows-1252 / ANSI) showed umlauts, ß and € as “�”, and saving destroyed those characters for good. They now open correctly and are saved back in their own encoding. If you type a character that encoding can’t hold (e.g. an emoji), the file is saved as UTF-8 and you get a note.
+- Fixed: saving changed Windows line endings (CRLF) to LF and removed a UTF-8 BOM; UTF-16 files couldn’t be read. Files now keep their line endings, BOM and encoding. F5 / changes on disk are also detected correctly for CRLF files.
+
 ## 1.9.0 — 2026-10-11
 - Loading information: opening a large document shows a card with its name while the preview is built (only when it takes a moment).
 

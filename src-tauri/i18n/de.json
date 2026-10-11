@@ -252,5 +252,6 @@
   "keys.needMod": "Bitte mit Strg oder Alt kombinieren (oder eine F-Taste nehmen) — sonst stört das Kürzel beim Tippen.",
   "keys.taken": "{k} gehörte zu „{a}“ — dort entfernt.",
   "keys.fixed": "{k} ist fest für „{a}“ vergeben.",
-  "load.render": "Vorschau wird erstellt"
+  "load.render": "Vorschau wird erstellt",
+  "toast.savedUtf8": "„{name}“ als UTF-8 gespeichert: einige Zeichen passen nicht in die bisherige Kodierung (Windows-1252)."
 }
