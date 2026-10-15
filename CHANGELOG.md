@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.10.1 — 2026-10-15
+- App icon with a picture of what the app does, like Slides and Plan Studio; the window and taskbar icon is now the same picture.
+
 ## 1.10.0 — 2026-10-15
 - New: Export as Word (.docx) — headings, lists (also nested and numbered), tables, quotes, code, links, footnotes, pictures next to the file, diagrams and sketches as pictures, formulas (as text), citations and the reference list; A4 with page numbers. Written in Rust (docx.rs) without extra libraries.
 - New: Export as PDF (File menu) — opens the print dialog; choose “Save as PDF”.

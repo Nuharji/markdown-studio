@@ -71,9 +71,10 @@
     const syncTitle = () => { const t = document.title; if (t && t !== lastTitle) { lastTitle = t; win.setTitle(t).catch(() => {}); } };
     if (titleEl) new MutationObserver(syncTitle).observe(titleEl, {childList: true, characterData: true, subtree: true});
     syncTitle();
-    // The window / taskbar icon follows the theme like the logo in the menu bar: it is drawn from the app's tile
-    // colors (CSS --tile-a/--tile-b) and letters, with the same shape as the installed icon.
+    // The window / taskbar icon is the app's own icon (ui/app-icon.png, the same picture as the installed icon).
+    // Without that file it is drawn from the tile colors (CSS --tile-a/--tile-b) and letters, following the theme.
     let lastIcon = '';
+    const setIconFrom = c => c.toBlob(async blob => { if (blob) win.setIcon(new Uint8Array(await blob.arrayBuffer())).catch(() => {}); }, 'image/png');
     const syncIcon = () => {
       const logo = document.querySelector('.logo span') || document.querySelector('.logo'), cs = getComputedStyle(document.documentElement);
       const a = cs.getPropertyValue('--tile-a').trim(), b = cs.getPropertyValue('--tile-b').trim();
@@ -85,10 +86,15 @@
       g.fillStyle = grad; g.beginPath(); g.roundRect(m, m, w, w, w * 0.225); g.fill();
       g.fillStyle = '#fff'; g.font = `700 ${Math.round(s * 0.332)}px "Segoe UI", system-ui, sans-serif`;
       g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(logo.textContent.trim(), s / 2, s / 2 + s * 0.02);
-      c.toBlob(async blob => { if (blob) win.setIcon(new Uint8Array(await blob.arrayBuffer())).catch(() => {}); }, 'image/png');
+      setIconFrom(c);
     };
-    new MutationObserver(syncIcon).observe(document.documentElement, {attributes: true, attributeFilter: ['data-theme']});
-    syncIcon();
+    const own = new Image();
+    own.onload = () => { const c = document.createElement('canvas'); c.width = c.height = 256; c.getContext('2d').drawImage(own, 0, 0, 256, 256); setIconFrom(c); };
+    own.onerror = () => {
+      new MutationObserver(syncIcon).observe(document.documentElement, {attributes: true, attributeFilter: ['data-theme']});
+      syncIcon();
+    };
+    own.src = 'app-icon.png';
     window.__TAURI__.event.listen('context-menu', ev => {
       const id = String(ev.payload);
       if (id.startsWith('native:')) nativeAction(id.slice(7));
