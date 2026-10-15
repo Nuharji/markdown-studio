@@ -7,6 +7,7 @@
 - New: File → New from Template: Referat, Facharbeit / Hausarbeit, Versuchsprotokoll, Unterrichtsnotiz, Lernzettel (German and English).
 - New: Notes — `[[Name]]` links to Name.md in the same folder; a click opens it or creates it there.
 - New: Sketches (Insert → Sketch, Ctrl+Shift+Y): draw with mouse or pen (pressure works); kept as a `sketch` block in the text, double-click in the preview to change it.
+- Shared with all Studio apps (shared.rs / shared.js): theme and language follow the other apps and Studio Hub (also when you switch windows), and file dialogs open in the work folder chosen in Studio Hub.
 
 ## 1.9.1 — 2026-10-11
 - Fixed: files that are not UTF-8 (older Windows files in Windows-1252 / ANSI) showed umlauts, ß and € as “�”, and saving destroyed those characters for good. They now open correctly and are saved back in their own encoding. If you type a character that encoding can’t hold (e.g. an emoji), the file is saved as UTF-8 and you get a note.

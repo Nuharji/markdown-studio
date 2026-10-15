@@ -1124,6 +1124,7 @@ function applySettings() {
   }
   invalidateSync();
   if (!THEMES.includes(settings.theme)) settings.theme = 'dark';
+  if (window.Shared) Shared.push({theme: settings.theme, lang: settings.lang});
   const nl = effectiveLang();
   if (nl !== lang) { lang = nl; applyLanguage(); }
   document.documentElement.dataset.theme = settings.theme;
@@ -1287,6 +1288,12 @@ window.__md = {docs: () => docs, cur, openNative, A, ed, runSpell, spellIssues: 
   let saved = null;
   try { saved = JSON.parse(localStorage.getItem(STORE)); } catch (e) {}
   if (saved && saved.settings) settings = {...DEF, ...saved.settings};
+  // Theme and language shared by all Studio apps (shared.js); the shared values win over this app's own.
+  if (window.Shared) await Shared.init({apply: sh => {
+    if (sh.theme) settings.theme = sh.theme;
+    if (sh.lang) settings.lang = sh.lang;
+    if (booted) applySettings();
+  }});
   lang = effectiveLang();
   applyLanguage();
   recent = (saved && saved.recent) || [];

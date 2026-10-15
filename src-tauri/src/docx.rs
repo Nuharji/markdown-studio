@@ -430,7 +430,6 @@ pub fn zip(files: &[(String, Vec<u8>)]) -> Vec<u8> {
 /// Export as Word: save dialog, then the file is written (None = cancelled).
 #[tauri::command]
 pub async fn export_docx(app: tauri::AppHandle, text: String, title: String, lang: String, path: Option<String>, pictures: Vec<Picture>) -> Result<Option<String>, String> {
-    use tauri_plugin_dialog::DialogExt;
     let base = path.as_deref().map(Path::new).and_then(Path::parent).map(Path::to_path_buf);
     let bytes = build(&text, &lang, &title, base.as_deref(), &pictures);
     // Debug builds only: automated tests export without the save dialog.
@@ -439,7 +438,7 @@ pub async fn export_docx(app: tauri::AppHandle, text: String, title: String, lan
         std::fs::write(&p, &bytes).map_err(|e| e.to_string())?;
         return Ok(Some(p));
     }
-    let Some(f) = app.dialog().file().set_title("Export as Word").set_file_name(&format!("{title}.docx")).add_filter("Word", &["docx"]).blocking_save_file() else {
+    let Some(f) = crate::shared::file_dialog(&app).set_title("Export as Word").set_file_name(&format!("{title}.docx")).add_filter("Word", &["docx"]).blocking_save_file() else {
         return Ok(None);
     };
     let target = f.into_path().map_err(|e| e.to_string())?;
