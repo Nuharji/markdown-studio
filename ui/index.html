@@ -60,6 +60,16 @@
 .md .dg-tools button:hover{background:#fff;border-color:rgba(0,0,0,.35)}
 .md.dark .dg-tools button{background:rgba(40,40,40,.94);color:#ddd;border-color:#555}
 @media print{.md .dg-tools{display:none}}
+.md .cite{color:inherit;border-bottom:1px dotted #8a9bb0;cursor:help}
+.md .cite-missing{color:#d7373f;border-bottom-color:#d7373f}
+.md .biblio{margin:0 0 1em}
+.md .bib-entry{margin:0 0 .5em;padding-left:2em;text-indent:-2em}
+.md a.wikilink{color:#8e4ec6;border-bottom:1px dashed currentColor;text-decoration:none}
+.md a.wikilink::before{content:"\2197\00a0";font-size:.8em}
+.md .sketch{margin:0 0 1em;text-align:center;cursor:pointer}
+.md .sketch svg{max-width:100%;height:auto;background:#fff;border:1px solid #e3e3e3;border-radius:6px}
+.md.dark .sketch svg{border-color:#3a3a3a}
+.md.dark a.wikilink{color:#c18bff}
 .md.dark{color:#d8d8d8}
 .md.dark h1,.md.dark h2,.md.dark h3,.md.dark h4,.md.dark h5{color:#f2f2f2}
 .md.dark h1,.md.dark h2,.md.dark hr{border-color:#383838}
@@ -373,6 +383,28 @@ input[type=range]{width:100%;max-width:360px;accent-color:var(--accent)}
 .modal-foot{display:flex;align-items:center;gap:8px;padding:12px 18px;border-top:1px solid var(--border)}
 .modal-foot[hidden]{display:none}
 
+/* School features (school.js): sources panel, templates, sketch pad */
+.src-form{display:grid;gap:6px;margin-bottom:12px}
+.src-form .field-in{width:100%}
+.src-form .row2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.src-item{display:flex;gap:8px;align-items:flex-start;justify-content:space-between;padding:7px 8px;border-radius:var(--radius);cursor:pointer;border:1px solid transparent}
+.src-item:hover{background:var(--hover);border-color:var(--border)}
+.src-main{min-width:0;line-height:1.45}.src-main b{color:var(--strong)}.src-main span{color:var(--dim)}
+.src-side{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex:none}
+.src-side code{font:11px Consolas,monospace;color:var(--accent)}
+.src-side .btn-sm{height:22px;font-size:11px}
+.tpl-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:6px}
+.tpl-card{display:flex;flex-direction:column;gap:4px;text-align:left;padding:12px 14px;border:1px solid var(--card-border);border-radius:calc(var(--radius) + 2px);background:var(--card-bg);cursor:pointer}
+.tpl-card:hover{border-color:var(--accent)}
+.tpl-card b{color:var(--strong);font-size:13px}.tpl-card span{color:var(--dim);line-height:1.45}
+.modal.wide .modal-body:has(.sk-pad){padding:12px 16px;overflow:auto}
+.sk-tools{display:flex;align-items:center;gap:6px;margin-bottom:10px}
+.sk-tools .sep{width:1px;height:20px;background:var(--border);margin:0 4px}
+.sk-col{width:22px;height:22px;border-radius:50%;border:2px solid var(--modal-bg);box-shadow:0 0 0 1px var(--border);cursor:pointer;padding:0}
+.sk-col.active{box-shadow:0 0 0 2px var(--accent)}
+.sk-w.active{border-color:var(--accent);color:var(--accent)}
+.sk-pad{width:100%;height:auto;aspect-ratio:1000/560;background:#fff;border:1px solid var(--border);border-radius:var(--radius);touch-action:none;cursor:crosshair;display:block}
+
 /* Settings dialog */
 .prefs{display:grid;grid-template-columns:180px 1fr;height:100%}
 .prefs nav{border-right:1px solid var(--border);padding:12px 8px;background:var(--panel)}
@@ -483,6 +515,7 @@ input[type=range]{width:100%;max-width:360px;accent-color:var(--accent)}
       <button data-tab="outline" data-i18n="ui.outline"></button>
       <button data-tab="md">Markdown</button>
       <button data-tab="latex">LaTeX</button>
+      <button data-tab="sources" data-i18n="ui.sources"></button>
       <button data-tab="props" data-i18n="ui.properties"></button>
     </div>
     <div class="dock-body">
@@ -499,6 +532,18 @@ input[type=range]{width:100%;max-width:360px;accent-color:var(--accent)}
         <div class="glyphs" id="glyphs"></div>
         <div class="sect">Syntax</div>
         <div id="latexCards"></div>
+      </div>
+      <div class="dpanel" data-panel="sources">
+        <div class="src-form">
+          <input class="field-in" id="srcAuthor" data-i18n-ph="src.author" spellcheck="false">
+          <input class="field-in" id="srcTitle" data-i18n-ph="src.titleF">
+          <div class="row2"><input class="field-in" id="srcYear" data-i18n-ph="src.year"><input class="field-in" id="srcAccessed" data-i18n-ph="src.accessed"></div>
+          <input class="field-in" id="srcPlace" data-i18n-ph="src.place" spellcheck="false">
+          <button class="btn-sm primary" id="srcAdd" data-i18n="src.add"></button>
+        </div>
+        <div class="sect" data-i18n="src.list"></div>
+        <div id="srcList"></div>
+        <p class="hint" style="color:var(--dim);line-height:1.6" data-i18n="src.help"></p>
       </div>
       <div class="dpanel" data-panel="props">
         <div class="psec">
@@ -760,6 +805,22 @@ Press <kbd>Ctrl</kbd> + <kbd>S</kbd>. H<sub>2</sub>O, x<sup>2</sup>, <mark>highl
 @@ Comments | HTML comments are hidden in the preview.
 @de Kommentare | HTML-Kommentare werden in der Vorschau ausgeblendet.
 Visible text <!-- invisible note -->
+@@ Citations and references | Cite a source with `[@key]` or `[@key, p. 12]`. The sources go into a `quellen` (or `sources`) block — one per line: key, author, title, year, publisher or URL, accessed. The block is shown as the sorted reference list. The Sources panel on the right fills it for you.
+@de Zitate und Literatur | Zitiere eine Quelle mit `[@schlüssel]` oder `[@schlüssel, S. 12]`. Die Quellen stehen in einem `quellen`-Block — eine pro Zeile: Schlüssel, Autor, Titel, Jahr, Verlag oder URL, Zugriff. Der Block erscheint als sortiertes Literaturverzeichnis. Die Quellen-Leiste rechts füllt ihn für dich.
+As shown by [@mueller20, p. 4] and [@bpb].
+
+```quellen
+mueller20: Müller, Anna | Klima verstehen | 2020 | Beltz, Weinheim
+bpb: Bundeszentrale für politische Bildung | Was ist Demokratie? | 2023 | https://www.bpb.de | 01.10.2026
+```
+@@ Linked notes | `[[Name]]` links to Name.md in the same folder; clicking it opens the note — or creates it. `[[Name|text]]` shows other text.
+@de Verknüpfte Notizen | `[[Name]]` verlinkt Name.md im selben Ordner; ein Klick öffnet die Notiz — oder legt sie an. `[[Name|Text]]` zeigt einen anderen Text.
+See [[Math – Pythagoras]] and [[Biology|my bio notes]].
+@@ Sketches | Insert → Sketch opens a drawing pad (mouse or pen). The drawing is kept as a `sketch` block; double-click it in the preview to change it.
+@de Skizzen | Einfügen → Skizze öffnet ein Zeichenfeld (Maus oder Stift). Die Zeichnung steht als `sketch`-Block im Text; Doppelklick in der Vorschau ändert sie.
+```sketch
+{"w":400,"h":160,"s":[["#378ef0",4,[[20,120,0.5],[110,40,0.5],[200,120,0.5],[290,40,0.5],[380,120,0.5]]],["#e5484d",3,[[20,140,0.5],[380,140,0.5]]]]}
+```
 </script>
 
 <!-- ============ Content: LaTeX reference ============ -->
@@ -947,10 +1008,403 @@ timeline
 ```
 </script>
 
+<!-- ============ Content: templates (File → New from Template, school.js) ============ -->
+<script type="text/plain" id="tpl-referat-de">
+# Referat: Thema
+
+**Name:** … · **Klasse / Kurs:** … · **Fach:** … · **Datum:** {date}
+
+## Gliederung
+
+1. Einleitung
+2. Hauptteil
+3. Fazit
+
+## 1 Einleitung
+
+Worum geht es — und warum ist das Thema wichtig? Stelle deine Leitfrage vor.
+
+## 2 Hauptteil
+
+### 2.1 Erster Aspekt
+
+Erkläre den ersten Punkt und belege ihn mit einer Quelle [@quelle1, S. 12].
+
+### 2.2 Zweiter Aspekt
+
+> Ein gutes Zitat bleibt im Gedächtnis.
+
+## 3 Fazit
+
+Fasse die wichtigsten Ergebnisse in drei Sätzen zusammen und beantworte die Leitfrage.
+
+## Literaturverzeichnis
+
+```quellen
+quelle1: Nachname, Vorname | Titel des Buches | 2024 | Verlag, Ort
+```
+</script>
+<script type="text/plain" id="tpl-referat-en">
+# Presentation: Topic
+
+**Name:** … · **Class:** … · **Subject:** … · **Date:** {date}
+
+## Outline
+
+1. Introduction
+2. Main part
+3. Conclusion
+
+## 1 Introduction
+
+What is it about — and why does it matter? State your guiding question.
+
+## 2 Main part
+
+### 2.1 First aspect
+
+Explain the first point and back it up with a source [@source1, p. 12].
+
+### 2.2 Second aspect
+
+> A good quote sticks in people's minds.
+
+## 3 Conclusion
+
+Sum up the key findings in three sentences and answer your question.
+
+## References
+
+```sources
+source1: Last name, First name | Title of the book | 2024 | Publisher, City
+```
+</script>
+<script type="text/plain" id="tpl-hausarbeit-de">
+# Titel der Arbeit
+
+**Facharbeit / Hausarbeit im Fach …**
+**Verfasst von:** … · **Betreuende Lehrkraft:** … · **Abgabe:** {date}
+
+---
+
+## Inhaltsverzeichnis
+
+*(Einfügen → Inhaltsverzeichnis, sobald die Kapitel stehen)*
+
+## 1 Einleitung
+
+### 1.1 Fragestellung
+
+Welche Frage beantwortet diese Arbeit?
+
+### 1.2 Vorgehen
+
+Wie bist du vorgegangen (Literatur, Experiment, Umfrage …)?
+
+## 2 Theoretischer Hintergrund
+
+Begriffe und Grundlagen, belegt mit Quellen [@quelle1].
+
+## 3 Hauptteil
+
+### 3.1 …
+
+### 3.2 …
+
+## 4 Fazit und Ausblick
+
+Antwort auf die Fragestellung, Grenzen der Arbeit, offene Fragen.
+
+## Literaturverzeichnis
+
+```quellen
+quelle1: Nachname, Vorname | Titel | 2024 | Verlag, Ort
+```
+
+## Eigenständigkeitserklärung
+
+Hiermit erkläre ich, dass ich die vorliegende Arbeit selbstständig verfasst und keine anderen als die angegebenen Hilfsmittel benutzt habe.
+
+Ort, Datum: ……………… Unterschrift: ………………
+</script>
+<script type="text/plain" id="tpl-hausarbeit-en">
+# Title of the Paper
+
+**Term paper / extended essay in …**
+**Written by:** … · **Supervisor:** … · **Due:** {date}
+
+---
+
+## Contents
+
+*(Insert → Table of Contents once the chapters are in place)*
+
+## 1 Introduction
+
+### 1.1 Research question
+
+Which question does this paper answer?
+
+### 1.2 Method
+
+How did you work (literature, experiment, survey …)?
+
+## 2 Background
+
+Terms and foundations, backed up with sources [@source1].
+
+## 3 Main part
+
+### 3.1 …
+
+### 3.2 …
+
+## 4 Conclusion and outlook
+
+Answer to the research question, limits of the work, open questions.
+
+## References
+
+```sources
+source1: Last name, First name | Title | 2024 | Publisher, City
+```
+
+## Declaration
+
+I declare that I have written this paper on my own and used no aids other than those stated.
+
+Place, date: ……………… Signature: ………………
+</script>
+<script type="text/plain" id="tpl-protokoll-de">
+# Versuchsprotokoll: Name des Versuchs
+
+**Fach:** … · **Datum:** {date} · **Gruppe:** …
+
+## Fragestellung
+
+Was soll der Versuch zeigen?
+
+## Hypothese
+
+Ich vermute, dass …
+
+## Material
+
+- …
+- …
+
+## Durchführung
+
+1. …
+2. …
+3. …
+
+## Skizze des Aufbaus
+
+*(Einfügen → Skizze)*
+
+## Beobachtung
+
+| Messung | Wert 1 | Wert 2 |
+|---|---|---|
+| 1 | | |
+| 2 | | |
+
+## Auswertung
+
+$$
+v = \frac{s}{t}
+$$
+
+## Fehlerbetrachtung
+
+Welche Messfehler sind möglich, und wie wirken sie sich aus?
+
+## Ergebnis
+
+Die Hypothese wurde bestätigt / widerlegt, weil …
+</script>
+<script type="text/plain" id="tpl-protokoll-en">
+# Lab Report: Name of the Experiment
+
+**Subject:** … · **Date:** {date} · **Group:** …
+
+## Question
+
+What should the experiment show?
+
+## Hypothesis
+
+I expect that …
+
+## Materials
+
+- …
+- …
+
+## Procedure
+
+1. …
+2. …
+3. …
+
+## Sketch of the setup
+
+*(Insert → Sketch)*
+
+## Observations
+
+| Measurement | Value 1 | Value 2 |
+|---|---|---|
+| 1 | | |
+| 2 | | |
+
+## Analysis
+
+$$
+v = \frac{s}{t}
+$$
+
+## Sources of error
+
+Which measurement errors are possible, and how do they affect the result?
+
+## Result
+
+The hypothesis was confirmed / disproved because …
+</script>
+<script type="text/plain" id="tpl-notiz-de">
+# Fach – Thema der Stunde
+
+**Datum:** {date} · **Verknüpft:** [[Vorherige Stunde]]
+
+## Stichpunkte
+
+- …
+- …
+
+> **Merke:** Das Wichtigste in einem Satz.
+
+## Formeln
+
+$a^2 + b^2 = c^2$
+
+## Skizze
+
+*(Einfügen → Skizze, oder Strg+Umschalt+Y)*
+
+## Fragen
+
+- [ ] Was habe ich noch nicht verstanden?
+
+## Hausaufgaben
+
+- [ ] …
+</script>
+<script type="text/plain" id="tpl-notiz-en">
+# Subject – Topic of the Lesson
+
+**Date:** {date} · **Linked:** [[Previous lesson]]
+
+## Key points
+
+- …
+- …
+
+> **Remember:** The most important thing in one sentence.
+
+## Formulas
+
+$a^2 + b^2 = c^2$
+
+## Sketch
+
+*(Insert → Sketch, or Ctrl+Shift+Y)*
+
+## Questions
+
+- [ ] What didn't I understand yet?
+
+## Homework
+
+- [ ] …
+</script>
+<script type="text/plain" id="tpl-lernzettel-de">
+# Lernzettel: Thema
+
+**Klausur am:** … · **Erstellt:** {date}
+
+## Wichtige Begriffe
+
+| Begriff | Bedeutung |
+|---|---|
+| … | … |
+| … | … |
+
+## Formeln
+
+| Formel | Wofür? |
+|---|---|
+| $E = m c^2$ | … |
+
+## Zusammenhänge
+
+```mermaid
+flowchart LR
+  A[Ursache] --> B[Wirkung] --> C[Folge]
+```
+
+## Typische Aufgaben
+
+1. …
+2. …
+
+## Kann ich schon?
+
+- [ ] …
+- [ ] …
+</script>
+<script type="text/plain" id="tpl-lernzettel-en">
+# Study Sheet: Topic
+
+**Exam on:** … · **Made:** {date}
+
+## Key terms
+
+| Term | Meaning |
+|---|---|
+| … | … |
+| … | … |
+
+## Formulas
+
+| Formula | Used for |
+|---|---|
+| $E = m c^2$ | … |
+
+## Connections
+
+```mermaid
+flowchart LR
+  A[Cause] --> B[Effect] --> C[Consequence]
+```
+
+## Typical tasks
+
+1. …
+2. …
+
+## Can I do it?
+
+- [ ] …
+- [ ] …
+</script>
+
 <script src="native.js"></script>
 <script src="autohide.js"></script>
 <script src="shortcuts.js"></script>
 <script src="loadbar.js"></script>
 <script src="app.js"></script>
+<script src="school.js"></script>
 </body>
 </html>

@@ -3,6 +3,8 @@
 //! - `$…$` / `$$…$$` and ```` ```math ```` become placeholders; ```` ```mermaid ```` becomes a diagram placeholder
 //!   (the UI draws them with KaTeX / Mermaid)
 //! - every top-level block gets `data-line` = its first source line (0-based), used for synchronized scrolling.
+//! - school extras: sources in a ```` ```quellen ```` block are cited with `[@key]` / `[@key, S. 12]` and listed as a
+//!   bibliography; `[[Note]]` links to Note.md next to the file; ```` ```sketch ```` blocks are drawings (SVG).
 //! The UI still sanitizes the HTML (DOMPurify) right before showing it.
 
 use pulldown_cmark::{html, CodeBlockKind, CowStr, Event, Options, Parser, Tag, TagEnd};
@@ -14,6 +16,8 @@ pub struct Rendered {
     /// [tex, display]
     math: Vec<(String, bool)>,
     diagrams: Vec<String>,
+    /// number of ```sketch blocks (drawn here as SVG)
+    sketches: usize,
     /// [level, text, source line] of every heading (outline)
     headings: Vec<(u8, String, usize)>,
     stats: Stats,
@@ -128,8 +132,232 @@ pub async fn md_spell(app: tauri::AppHandle, text: String, lang: String, fallbac
     crate::spell::check(&app, &text, &prose(&text), &lang, &fallback)
 }
 
-pub fn render(src: &str, inline: bool) -> Rendered {
+
+/* ============ Sources, citations, wiki links, sketches ============ */
+
+/// Fenced block names that hold the sources of a document.
+pub const SOURCE_LANGS: &[&str] = &["quellen", "sources", "references", "literatur", "bibliography"];
+
+/// One source: `key: Author; Second Author | Title | Year | Publisher, place or URL | accessed`.
+#[derive(Serialize, Clone, Debug, PartialEq, Default)]
+pub struct Source {
+    pub key: String,
+    pub author: String,
+    pub title: String,
+    pub year: String,
+    pub place: String,
+    pub accessed: String,
+    /// source line (0-based), so the UI can jump to it
+    pub line: usize,
+}
+
+/// Lines of fenced blocks: (language, first content line, lines), outside of other code.
+fn fenced_blocks(src: &str) -> Vec<(String, usize, Vec<&str>)> {
+    let mut out = Vec::new();
+    let mut open: Option<(String, String, usize, Vec<&str>)> = None; // fence, lang, start, lines
+    for (i, line) in src.lines().enumerate() {
+        let t = line.trim_start();
+        match &mut open {
+            Some((fence, _, _, lines)) => {
+                if t.starts_with(fence.as_str()) && t.trim_end().chars().all(|c| c == fence.chars().next().unwrap()) {
+                    let (_, lang, start, lines) = open.take().unwrap();
+                    out.push((lang, start, lines));
+                } else { lines.push(line); }
+            }
+            None => {
+                for f in ["```", "~~~"] {
+                    if let Some(rest) = t.strip_prefix(f) {
+                        let n = f.len() + rest.chars().take_while(|&c| c == f.chars().next().unwrap()).count();
+                        let lang = t[n..].split_whitespace().next().unwrap_or("").to_ascii_lowercase();
+                        open = Some((t[..n].to_string(), lang, i + 1, Vec::new()));
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    out
+}
+
+pub fn sources(src: &str) -> Vec<Source> {
+    let mut out = Vec::new();
+    for (lang, start, lines) in fenced_blocks(src) {
+        if !SOURCE_LANGS.contains(&lang.as_str()) { continue; }
+        for (i, line) in lines.iter().enumerate() {
+            let line = line.trim();
+            if line.is_empty() || line.starts_with('#') || line.starts_with("//") { continue; }
+            let Some((key, rest)) = line.split_once(':') else { continue };
+            let key = key.trim();
+            if key.is_empty() || !key.chars().all(|c| c.is_alphanumeric() || "-_.".contains(c)) { continue; }
+            let f: Vec<String> = rest.split('|').map(|x| x.trim().to_string()).collect();
+            let get = |n: usize| f.get(n).cloned().unwrap_or_default();
+            out.push(Source { key: key.to_string(), author: get(0), title: get(1), year: get(2), place: get(3), accessed: get(4), line: start + i });
+        }
+    }
+    out
+}
+
+/// "Müller", "Müller & Schmidt", "Müller et al." — last names before the first comma of each author.
+fn short_author(a: &str) -> String {
+    let names: Vec<&str> = a.split(';').map(|x| x.split(',').next().unwrap_or("").trim()).filter(|x| !x.is_empty()).collect();
+    match names.len() {
+        0 => "o. A.".into(),
+        1 => names[0].into(),
+        2 => format!("{} & {}", names[0], names[1]),
+        _ => format!("{} et al.", names[0]),
+    }
+}
+
+/// The parts of a bibliography entry: (text, italic).
+pub fn bib_parts(s: &Source, lang: &str) -> Vec<(String, bool)> {
+    let de = lang == "de";
+    let mut v = vec![(format!("{} ({}): ", if s.author.is_empty() { if de { "o. A." } else { "n.a." } } else { &s.author },
+        if s.year.is_empty() { if de { "o. J." } else { "n.d." } } else { &s.year }), false)];
+    v.push((s.title.clone(), true));
+    let mut tail = String::from(".");
+    if !s.place.is_empty() {
+        tail += " ";
+        tail += &s.place;
+        if !s.place.ends_with('.') { tail += "."; }
+    }
+    if !s.accessed.is_empty() { tail += &format!(" ({} {})", if de { "Zugriff am" } else { "accessed" }, s.accessed); }
+    v.push((tail, false));
+    v
+}
+
+fn bibliography_html(list: &[Source], lang: &str) -> String {
+    let mut sorted: Vec<&Source> = list.iter().collect();
+    sorted.sort_by_key(|s| (s.author.to_lowercase(), s.year.clone()));
+    let mut h = String::from("<div class=\"biblio\">");
+    for s in sorted {
+        h += &format!("<p class=\"bib-entry\" id=\"src-{}\">", escape(&s.key));
+        for (t, it) in bib_parts(s, lang) {
+            let t = escape(&t);
+            // Web addresses in the entry become links.
+            let t = t.split(' ').map(|w| if w.starts_with("http://") || w.starts_with("https://") {
+                let (url, end) = match w.strip_suffix('.') { Some(u) => (u, "."), None => (w, "") };
+                format!("<a href=\"{url}\">{url}</a>{end}")
+            } else { w.to_string() }).collect::<Vec<_>>().join(" ");
+            h += &if it { format!("<em>{t}</em>") } else { t };
+        }
+        h += "</p>";
+    }
+    if list.is_empty() { h += "<p class=\"bib-empty\">—</p>"; }
+    h + "</div>"
+}
+
+/// Replaces citations `[@key]`, `[@key, S. 12]`, `[@a; @b]` and wiki links `[[Note]]`, `[[Note|text]]` in the
+/// text (not in code). `html`: citations become <span class="cite">, wiki links <a data-note>; otherwise plain text
+/// (Word export). Line breaks are never added or removed, so source lines stay where they were.
+pub fn preprocess(src: &str, list: &[Source], html: bool) -> String {
+    let mut out = String::with_capacity(src.len());
+    let mut fence: Option<String> = None;
+    for (n, line) in src.split_inclusive('\n').enumerate() {
+        let t = line.trim_start();
+        if let Some(f) = &fence {
+            if t.starts_with(f.as_str()) { fence = None; }
+            out.push_str(line);
+            continue;
+        }
+        if t.starts_with("```") || t.starts_with("~~~") { fence = Some(t[..3].to_string()); out.push_str(line); continue; }
+        if t.starts_with("    ") || t.starts_with('\t') { out.push_str(line); continue; }
+        let _ = n;
+        // Outside of `inline code`.
+        let mut in_code = false;
+        let mut i = 0;
+        let b = line.as_bytes();
+        while i < line.len() {
+            if b[i] == b'`' { in_code = !in_code; out.push('`'); i += 1; continue; }
+            if !in_code && line[i..].starts_with("[[") {
+                if let Some(end) = line[i + 2..].find("]]") {
+                    let inner = &line[i + 2..i + 2 + end];
+                    if !inner.is_empty() && !inner.contains('[') {
+                        let (target, label) = inner.split_once('|').unwrap_or((inner, inner));
+                        out.push_str(&if html {
+                            format!("<a class=\"wikilink\" href=\"#\" data-note=\"{}\">{}</a>", escape(target.trim()), escape(label.trim()))
+                        } else { label.trim().to_string() });
+                        i += end + 4;
+                        continue;
+                    }
+                }
+            }
+            if !in_code && line[i..].starts_with("[@") {
+                if let Some(end) = line[i..].find(']') {
+                    let inner = &line[i + 1..i + end];
+                    let mut parts = Vec::new();
+                    let mut ok = true;
+                    for c in inner.split(';') {
+                        let c = c.trim();
+                        let Some(c) = c.strip_prefix('@') else { ok = false; break };
+                        let (key, loc) = c.split_once(',').map(|(k, l)| (k.trim(), Some(l.trim()))).unwrap_or((c.trim(), None));
+                        parts.push((key.to_string(), loc.map(str::to_string)));
+                    }
+                    if ok && !parts.is_empty() {
+                        let mut missing = false;
+                        let mut full = Vec::new();
+                        let text = parts.iter().map(|(k, loc)| {
+                            let base = match list.iter().find(|s| &s.key == k) {
+                                Some(s) => { full.push(format!("{}: {}", s.author, s.title)); format!("{} {}", short_author(&s.author), s.year) }
+                                None => { missing = true; format!("?{k}") }
+                            };
+                            match loc { Some(l) if !l.is_empty() => format!("{base}, {l}"), _ => base }
+                        }).collect::<Vec<_>>().join("; ");
+                        out.push_str(&if html {
+                            format!("<span class=\"{}\" title=\"{}\">({})</span>", if missing { "cite cite-missing" } else { "cite" }, escape(&full.join(" · ")), escape(&text))
+                        } else { format!("({text})") });
+                        i += end + 1;
+                        continue;
+                    }
+                }
+            }
+            let ch = line[i..].chars().next().unwrap();
+            out.push(ch);
+            i += ch.len_utf8();
+        }
+    }
+    out
+}
+
+/// A drawing from a ```sketch block: {"w":800,"h":400,"s":[[color, width, [[x,y,pressure],…]],…]}.
+#[derive(serde::Deserialize, Default)]
+pub struct Sketch {
+    pub w: f64,
+    pub h: f64,
+    #[serde(default)]
+    pub s: Vec<(String, f64, Vec<Vec<f64>>)>,
+}
+
+pub fn sketch_svg(code: &str) -> Result<String, String> {
+    let sk: Sketch = serde_json::from_str(code.trim()).map_err(|e| e.to_string())?;
+    let (w, h) = (sk.w.max(10.0), sk.h.max(10.0));
+    let mut svg = format!("<svg viewBox=\"0 0 {w} {h}\" width=\"{w}\" height=\"{h}\" xmlns=\"http://www.w3.org/2000/svg\">");
+    for (color, width, pts) in &sk.s {
+        if pts.is_empty() { continue; }
+        let color: String = color.chars().filter(|c| c.is_ascii_alphanumeric() || *c == '#').take(9).collect();
+        let pressure = pts.iter().map(|p| p.get(2).copied().unwrap_or(0.5)).sum::<f64>() / pts.len() as f64;
+        let sw = (width * (0.5 + pressure)).max(0.5);
+        let mut d = String::new();
+        for (i, p) in pts.iter().enumerate() {
+            let (x, y) = (p.first().copied().unwrap_or(0.0), p.get(1).copied().unwrap_or(0.0));
+            d += &format!("{}{:.1} {:.1}", if i == 0 { "M" } else { " L" }, x, y);
+        }
+        if pts.len() == 1 { d += " l0.1 0"; }
+        svg += &format!("<path d=\"{d}\" fill=\"none\" stroke=\"{color}\" stroke-width=\"{sw:.1}\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>");
+    }
+    Ok(svg + "</svg>")
+}
+
+/// The sources of a document for the Sources panel.
+#[tauri::command]
+pub async fn md_sources(text: String) -> Vec<Source> { sources(&text) }
+
+#[cfg(test)]
+pub fn render(src: &str, inline: bool) -> Rendered { render_lang(src, inline, "en") }
+
+pub fn render_lang(src: &str, inline: bool, lang: &str) -> Rendered {
     let src = src.replace("\r\n", "\n");
+    let list = sources(&src);
+    let src = preprocess(&src, &list, true);
     let line_starts: Vec<usize> = std::iter::once(0).chain(src.match_indices('\n').map(|(i, _)| i + 1)).collect();
     let line_of = |off: usize| line_starts.partition_point(|&s| s <= off).saturating_sub(1);
     let mut out = Rendered::default();
@@ -164,8 +392,9 @@ pub fn render(src: &str, inline: bool) -> Rendered {
             Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced(info))) => {
                 let lang = info.split_whitespace().next().unwrap_or("").to_ascii_lowercase();
                 code_depth += 1;
-                if lang != "math" && lang != "mermaid" { out.stats.code += 1; }
-                if lang == "math" || lang == "mermaid" {
+                let special = lang == "math" || lang == "mermaid" || lang == "sketch" || SOURCE_LANGS.contains(&lang.as_str());
+                if !special { out.stats.code += 1; }
+                if special {
                     in_code = Some(lang);
                     code_buf.clear();
                     depth += 1;
@@ -181,6 +410,14 @@ pub fn render(src: &str, inline: bool) -> Rendered {
                     let ph = if kind == "math" {
                         out.math.push((code.trim().to_string(), true));
                         format!("<div class=\"math-block\" data-math=\"{}\"></div>", out.math.len() - 1)
+                    } else if kind == "sketch" {
+                        out.sketches += 1;
+                        match sketch_svg(&code) {
+                            Ok(svg) => format!("<div class=\"sketch\" data-sketch=\"{}\">{svg}</div>", out.sketches - 1),
+                            Err(e) => format!("<div class=\"sketch dg-error\" data-sketch=\"{}\">sketch: {}</div>", out.sketches - 1, escape(&e)),
+                        }
+                    } else if SOURCE_LANGS.contains(&kind.as_str()) {
+                        bibliography_html(&list, lang)
                     } else {
                         out.diagrams.push(code);
                         format!("<div class=\"diagram\" data-diagram=\"{}\"></div>", out.diagrams.len() - 1)
@@ -236,8 +473,9 @@ pub fn render(src: &str, inline: bool) -> Rendered {
 
 /// Renders several Markdown texts at once (the preview, or all cards of the syntax guide).
 #[tauri::command]
-pub async fn md_render(sources: Vec<String>, inline: Option<bool>) -> Vec<Rendered> {
-    sources.iter().map(|s| render(s, inline.unwrap_or(false))).collect()
+pub async fn md_render(sources: Vec<String>, inline: Option<bool>, lang: Option<String>) -> Vec<Rendered> {
+    let lang = lang.unwrap_or_else(|| "en".into());
+    sources.iter().map(|s| render_lang(s, inline.unwrap_or(false), &lang)).collect()
 }
 
 #[cfg(test)]
@@ -296,5 +534,33 @@ x
     #[test]
     fn inline_mode() {
         assert_eq!(render("Use **bold** text", true).html, "Use <strong>bold</strong> text");
+    }
+
+    #[test]
+    fn sources_and_citations() {
+        let src = "Text [@mueller20, S. 12] und [@bpb; @x].\n\nCode `[@mueller20]` bleibt.\n\n```quellen\n# Kommentar\nmueller20: Müller, Anna; Schmidt, Bo | Klima verstehen | 2020 | Beltz, Weinheim\nbpb: Bundeszentrale | Demokratie | 2023 | https://www.bpb.de/x | 01.10.2026\n```\n";
+        let list = sources(src);
+        assert_eq!(list.len(), 2);
+        assert_eq!(list[0].key, "mueller20");
+        assert_eq!(list[1].accessed, "01.10.2026");
+        assert_eq!(list[0].line, 6);
+        let plain = preprocess(src, &list, false);
+        assert!(plain.starts_with("Text (Müller & Schmidt 2020, S. 12) und (Bundeszentrale 2023; ?x)."), "{plain}");
+        assert!(plain.contains("`[@mueller20]`"));
+        assert_eq!(plain.lines().count(), src.lines().count());
+        let r = render_lang(src, false, "de");
+        assert!(r.html.contains("<span class=\"cite cite-missing\""), "{}", r.html);
+        assert!(r.html.contains("<div data-line=\"4\" class=\"biblio\"><p class=\"bib-entry\" id=\"src-bpb\">Bundeszentrale (2023): <em>Demokratie</em>. <a href=\"https://www.bpb.de/x\">https://www.bpb.de/x</a>. (Zugriff am 01.10.2026)</p>"), "{}", r.html);
+        assert_eq!(r.stats.code, 0);
+    }
+    #[test]
+    fn wiki_links_and_sketches() {
+        let r = render("Siehe [[Mathe 1]] und [[Bio|Biologie]].\n\n```sketch\n{\"w\":100,\"h\":50,\"s\":[[\"#e5484d\",2,[[1,2,0.5],[3,4,0.5]]]]}\n```\n", false);
+        assert!(r.html.contains("<a class=\"wikilink\" href=\"#\" data-note=\"Mathe 1\">Mathe 1</a>"), "{}", r.html);
+        assert!(r.html.contains("data-note=\"Bio\">Biologie</a>"));
+        assert!(r.html.contains("<div data-line=\"2\" class=\"sketch\" data-sketch=\"0\"><svg viewBox=\"0 0 100 50\""), "{}", r.html);
+        assert!(r.html.contains("<path d=\"M1.0 2.0 L3.0 4.0\" fill=\"none\" stroke=\"#e5484d\" stroke-width=\"2.0\""), "{}", r.html);
+        assert_eq!(r.sketches, 1);
+        assert!(sketch_svg("not json").is_err());
     }
 }

@@ -68,7 +68,7 @@ function renderDiagram(el, code, prevHtml, tools) {
 }
 /* Markdown is turned into HTML in Rust (markdown.rs): GitHub-style Markdown, math and diagram placeholders, and
    data-line anchors for synchronized scrolling. Here it is sanitized and the formulas, diagrams and code colors are drawn. */
-async function mdRender(sources, inline = false) { return invoke('md_render', {sources, inline}); }
+async function mdRender(sources, inline = false) { return invoke('md_render', {sources, inline, lang}); }
 /* r = {html, math: [[tex, display]], diagrams: [code]} from Rust. */
 function renderInto(root, r) {
   // Keep the previous drawings so a diagram being edited doesn't flash empty while it re-renders.
@@ -136,7 +136,7 @@ $('#recent').addEventListener('click', async e => {
 });
 
 /* Actions that make sense with no document open; everything else is disabled on the start screen. */
-const NO_DOC = new Set(['toggleAutoHide', 'newDoc', 'openFile', 'settings', 'langAuto', 'langEn', 'langDe', 'themeDark', 'themeLight', 'themeGithub',
+const NO_DOC = new Set(['toggleAutoHide', 'newDoc', 'newFromTemplate', 'openFile', 'settings', 'langAuto', 'langEn', 'langDe', 'themeDark', 'themeLight', 'themeGithub',
   'themeGithubDark', 'openGuide', 'refMd', 'refLatex', 'shortcuts', 'about', 'togglePanels', 'toggleSync', 'toggleWrap', 'togglePaper',
   'zoomIn', 'zoomOut', 'zoomReset', 'viewEdit', 'viewSplit', 'viewPreview']);
 const allowed = act => !!cur() || NO_DOC.has(act);
@@ -160,6 +160,7 @@ function loadActive() {
   ed.setSelectionRange(d.sel[0], d.sel[1]);
   ed.scrollTop = d.scroll;
   renderTabs(); updateTitle(); render(); updateCursor(); saveSession();
+  if (settings.dockTab === 'sources' && window.School) School.renderSources();
   ed.focus({preventScroll: true});
 }
 function activate(i) { if (i === active) return; storeCurrent(); active = i; loadActive(); }
@@ -289,6 +290,7 @@ ed.addEventListener('input', () => {
   cur().content = ed.value;
   markDirty(true);
   clearTimeout(rT); rT = setTimeout(render, ed.value.length > 60000 ? 350 : 120);
+  if (settings.dock && settings.dockTab === 'sources' && window.School) School.renderSourcesSoon();
   updateCursor();
 });
 
@@ -658,14 +660,14 @@ function standaloneSvg(svg) {
   clone.style.maxWidth = '';
   return {xml: new XMLSerializer().serializeToString(clone), w, h};
 }
-async function svgToPng(xml, w, h, scale = 2) {
+async function svgToPng(xml, w, h, scale = 2, bg = null) {
   const img = new Image();
   img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(xml);
   await img.decode();
   const c = document.createElement('canvas');
   c.width = w * scale; c.height = h * scale;
   const ctx = c.getContext('2d');
-  ctx.fillStyle = isPaperDark() ? (isGh() ? '#0d1117' : '#1c1c1c') : '#ffffff';
+  ctx.fillStyle = bg || (isPaperDark() ? (isGh() ? '#0d1117' : '#1c1c1c') : '#ffffff');
   ctx.fillRect(0, 0, c.width, c.height);
   ctx.drawImage(img, 0, 0, c.width, c.height);
   const blob = await new Promise((ok, fail) => c.toBlob(b => b ? ok(b) : fail(new Error('PNG encoding failed')), 'image/png'));
@@ -805,6 +807,9 @@ const ICONS = {
   table: '<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M3 15h18M10 4v16"/></svg>',
   hr: '<svg viewBox="0 0 24 24"><path d="M3 12h18"/><path d="M7 6h10M7 18h10" opacity=".4"/></svg>',
   diagram: '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="6" rx="1"/><rect x="14" y="15" width="7" height="6" rx="1"/><path d="M6.5 9v4a2 2 0 0 0 2 2H14"/></svg>',
+  sketch: '<svg viewBox="0 0 24 24"><path d="M3 17c3-6 5-9 7-9s1 6 3 6 3-5 5-5 2 2 3 3"/><path d="m15 21 6-6M3 21h8"/></svg>',
+  cite: '<svg viewBox="0 0 24 24"><path d="M4 19V5a2 2 0 0 1 2-2h13v15H6a2 2 0 0 0-2 2zm0 0a2 2 0 0 0 2 2h13"/><path d="M9 8h6M9 12h4"/></svg>',
+  wiki: '<svg viewBox="0 0 24 24"><path d="M8 4H5v16h3M16 4h3v16h-3M9 12h6"/></svg>',
   sun: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',
   moon: '<svg viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>',
   print: '<svg viewBox="0 0 24 24"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="7"/></svg>',
@@ -833,6 +838,8 @@ const A = {
   nextIssue: () => nextIssue(),
   newDoc: () => openDoc(null, ''),
   openFile, save: () => save(false), reloadFile, saveAs: () => save(true), exportHtml,
+  newFromTemplate: () => School.templates(), exportDocx: () => School.exportDocx(), exportPdf: () => School.exportPdf(),
+  sketch: () => School.sketch(), cite: () => showDock('sources'), wikilink: () => wrap('[[', ']]', lang === 'de' ? 'Notizname' : 'note name'),
   print: async () => {
     await render();
     setTimeout(() => invoke ? invoke('print_page').catch(e => toast(t('toast.printFail', {e}))) : window.print(), 60);
@@ -920,15 +927,15 @@ const A = {
 
 // Menu items: [action, shortcut, checked(), nativeKey]; strings are separators, '#key' is a section label.
 const MENUS = [
-  ['file', [['newDoc', 'Alt+N'], ['openFile', 'Ctrl+O'], '-', ['save', 'Ctrl+S'], ['saveAs', 'Ctrl+Shift+S'], ['reloadFile', 'F5'], '-',
-    ['exportHtml', 'Ctrl+E'], ['print', 'Ctrl+P'], '-', ['closeTab', 'Alt+W']]],
+  ['file', [['newDoc', 'Alt+N'], ['newFromTemplate', 'Alt+Shift+N'], ['openFile', 'Ctrl+O'], '-', ['save', 'Ctrl+S'], ['saveAs', 'Ctrl+Shift+S'], ['reloadFile', 'F5'], '-',
+    ['exportDocx', 'Ctrl+Shift+E'], ['exportPdf'], ['exportHtml', 'Ctrl+E'], ['print', 'Ctrl+P'], '-', ['closeTab', 'Alt+W']]],
   ['edit', [['undo', 'Ctrl+Z', null, true], ['redo', 'Ctrl+Y', null, true], '-', ['find', 'Ctrl+F'], ['findNext', 'F3'], ['nextIssue', 'F7'], '-',
     ['selectAll', 'Ctrl+A', null, true]]],
   ['insert', [['h1', 'Ctrl+Shift+1'], ['h2', 'Ctrl+Shift+2'], ['h3', 'Ctrl+Shift+3'], ['para', 'Ctrl+Shift+0'], '-',
     ['bold', 'Ctrl+B'], ['italic', 'Ctrl+I'], ['strike', 'Ctrl+Shift+X'], ['code', 'Ctrl+`'], ['link', 'Ctrl+K'], ['image', 'Ctrl+Shift+G'], '-',
     ['ul', 'Ctrl+Shift+8'], ['ol', 'Ctrl+Shift+7'], ['task', 'Ctrl+Shift+9'], ['quote', 'Ctrl+Shift+.'],
     ['codeblock', 'Ctrl+Shift+K'], ['table', 'Ctrl+Shift+L'], ['hr', 'Ctrl+Shift+-'], ['diagram', 'Ctrl+Shift+D'], '-',
-    ['mathInline', 'Ctrl+M'], ['mathBlock', 'Ctrl+Shift+M'], '-', ['toc'], ['date']]],
+    ['mathInline', 'Ctrl+M'], ['mathBlock', 'Ctrl+Shift+M'], '-', ['sketch', 'Ctrl+Shift+Y'], ['cite', 'Ctrl+Shift+Q'], ['wikilink', 'Ctrl+Shift+W'], '-', ['toc'], ['date']]],
   ['view', [['viewEdit', 'Alt+1', () => settings.view === 'edit'], ['viewSplit', 'Alt+2', () => settings.view === 'split'],
     ['viewPreview', 'Alt+3', () => settings.view === 'preview'], '-',
     ['togglePanels', 'Ctrl+\\', () => settings.dock], ['toggleAutoHide', null, () => settings.autoHide], ['toggleSync', null, () => settings.sync],
@@ -993,7 +1000,8 @@ const RAIL = [
   ['link', ICONS.link], ['image', ICONS.image], '-',
   ['ul', ICONS.ul], ['ol', ICONS.ol], ['task', ICONS.task], ['quote', ICONS.quote], '-',
   ['codeblock', ICONS.codeblock], ['table', ICONS.table], ['hr', ICONS.hr], ['diagram', ICONS.diagram], '-',
-  ['mathInline', '<span class="g serif"><i>x</i>²</span>'], ['mathBlock', '<span class="g serif" style="font-size:17px">&sum;</span>']
+  ['mathInline', '<span class="g serif"><i>x</i>²</span>'], ['mathBlock', '<span class="g serif" style="font-size:17px">&sum;</span>'], '-',
+  ['sketch', ICONS.sketch], ['cite', ICONS.cite], ['wikilink', ICONS.wiki]
 ];
 function buildToolbars() {
   const fill = (id, list) => { const box = $(id); box.innerHTML = ''; list.forEach(([a, i]) => box.append(makeBtn(a, i))); };
@@ -1016,6 +1024,8 @@ $$('#dockTabs button').forEach(b => b.onclick = () => showDock(b.dataset.tab));
 $('#zIn').onclick = A.zoomIn; $('#zOut').onclick = A.zoomOut; $('#zVal').onclick = A.zoomReset;
 canvas.addEventListener('wheel', e => { if (e.ctrlKey) { e.preventDefault(); setZoom(settings.zoom + (e.deltaY < 0 ? 10 : -10)); } }, {passive: false});
 paper.addEventListener('click', e => {
+  const note = e.target.closest('a[data-note]');
+  if (note) { e.preventDefault(); School.openNote(note.dataset.note); return; }
   const a = e.target.closest('a[href^="#"]'); if (!a) return;
   e.preventDefault();
   const target = document.getElementById(decodeURIComponent(a.getAttribute('href').slice(1)));
@@ -1142,6 +1152,7 @@ function applySettings() {
   $$('#dockTabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === settings.dockTab));
   $$('.dpanel').forEach(p => p.classList.toggle('active', p.dataset.panel === settings.dockTab));
   if (settings.dock && (settings.dockTab === 'md' || settings.dockTab === 'latex')) buildCards();
+  if (settings.dock && settings.dockTab === 'sources' && window.School) School.renderSources();
   $('#zVal').textContent = settings.zoom + '%';
   saveSession();
 }
@@ -1264,6 +1275,7 @@ if (window.Native) {
   });
 }
 
+paper.addEventListener('dblclick', e => { const sk = e.target.closest('.sketch[data-sketch]'); if (sk) School.sketch(+sk.dataset.sketch); });
 window.__md = {docs: () => docs, cur, openNative, A, ed, runSpell, spellIssues: () => spellIssues, issueAt, spellMenu, spellAction, nextIssue, render, findNext, replaceAll, countMatches};  // test hook (like Dt's __dt)
 
 /* ================= Boot ================= */

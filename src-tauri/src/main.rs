@@ -1,6 +1,7 @@
 // Hide the console window in release builds on Windows.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod docx;
 mod edit;
 mod markdown;
 mod spell;
@@ -146,6 +147,31 @@ async fn open_files(app: AppHandle) -> Result<Vec<Doc>, String> {
         .into_iter()
         .map(|f| f.into_path().map_err(|e| e.to_string()).and_then(|p| load(&p)))
         .collect()
+}
+
+/// A linked note ([[Name]]): Name.md (or another Markdown extension) in the folder of the note `from`, any case.
+#[tauri::command]
+async fn find_note(from: String, name: String) -> Result<Option<Doc>, String> {
+    let dir = Path::new(&from).parent().ok_or("no folder")?;
+    let want = name.trim().to_lowercase();
+    for e in fs::read_dir(dir).map_err(|e| e.to_string())?.flatten() {
+        let p = e.path();
+        let ext = p.extension().map(|x| x.to_string_lossy().to_lowercase()).unwrap_or_default();
+        let stem = p.file_stem().map(|x| x.to_string_lossy().to_lowercase()).unwrap_or_default();
+        if p.is_file() && MD_EXT.contains(&ext.as_str()) && (stem == want || format!("{stem}.{ext}") == want) { return load(&p).map(Some); }
+    }
+    Ok(None)
+}
+
+/// Creates the linked note Name.md next to `from` (with the name as its heading) and returns it.
+#[tauri::command]
+async fn create_note(from: String, name: String) -> Result<Doc, String> {
+    let dir = Path::new(&from).parent().ok_or("no folder")?;
+    let clean: String = name.trim().chars().filter(|c| !"/\\:*?\"<>|".contains(*c)).collect();
+    if clean.is_empty() { return Err("empty name".into()); }
+    let path = dir.join(format!("{clean}.md"));
+    if !path.exists() { write(&path, &format!("# {}\n\n", name.trim()))?; }
+    load(&path)
 }
 
 #[tauri::command]
@@ -392,8 +418,12 @@ fn main() {
             clipboard_write,
             open_files,
             read_file,
+            find_note,
+            create_note,
             file_stamps,
             markdown::md_render,
+            markdown::md_sources,
+            docx::export_docx,
             markdown::md_spell,
             spell::spell_check,
             spell::spell_suggest,
@@ -454,6 +484,21 @@ mod tests {
             assert!(!text.contains('\r'));
             assert_eq!(encode_text(&text, &fmt).0, bytes, "{fmt:?}");
         }
+    }
+
+    #[test]
+    fn linked_notes() {
+        let dir = std::env::temp_dir().join("md-notes-test");
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).unwrap();
+        fs::write(dir.join("Mathe 1.md"), "# Mathe 1\n").unwrap();
+        let from = dir.join("Heute.md").to_string_lossy().into_owned();
+        use tauri::async_runtime::block_on as run;
+        assert_eq!(run(find_note(from.clone(), "mathe 1".into())).unwrap().unwrap().name, "Mathe 1.md");
+        assert!(run(find_note(from.clone(), "Bio".into())).unwrap().is_none());
+        let made = run(create_note(from.clone(), "Bio: Zelle".into())).unwrap();
+        assert_eq!((made.name.as_str(), made.content.as_str()), ("Bio Zelle.md", "# Bio: Zelle\n\n"));
+        assert!(run(find_note(from, "bio zelle".into())).unwrap().is_some());
     }
 
     #[test]

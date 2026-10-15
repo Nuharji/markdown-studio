@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.10.0 — 2026-10-15
+- New: Export as Word (.docx) — headings, lists (also nested and numbered), tables, quotes, code, links, footnotes, pictures next to the file, diagrams and sketches as pictures, formulas (as text), citations and the reference list; A4 with page numbers. Written in Rust (docx.rs) without extra libraries.
+- New: Export as PDF (File menu) — opens the print dialog; choose “Save as PDF”.
+- New: Sources and citations. The Sources panel adds a source (key is made for you) to a `quellen` block; `[@key]` / `[@key, S. 12]` in the text become “(Müller 2020, S. 12)”, the block becomes the reference list (sorted by author). Unknown keys are marked red.
+- New: File → New from Template: Referat, Facharbeit / Hausarbeit, Versuchsprotokoll, Unterrichtsnotiz, Lernzettel (German and English).
+- New: Notes — `[[Name]]` links to Name.md in the same folder; a click opens it or creates it there.
+- New: Sketches (Insert → Sketch, Ctrl+Shift+Y): draw with mouse or pen (pressure works); kept as a `sketch` block in the text, double-click in the preview to change it.
+
 ## 1.9.1 — 2026-10-11
 - Fixed: files that are not UTF-8 (older Windows files in Windows-1252 / ANSI) showed umlauts, ß and € as “�”, and saving destroyed those characters for good. They now open correctly and are saved back in their own encoding. If you type a character that encoding can’t hold (e.g. an emoji), the file is saved as UTF-8 and you get a note.
 - Fixed: saving changed Windows line endings (CRLF) to LF and removed a UTF-8 BOM; UTF-16 files couldn’t be read. Files now keep their line endings, BOM and encoding. F5 / changes on disk are also detected correctly for CRLF files.
