@@ -23,6 +23,41 @@ fn x(s: &str) -> String {
 }
 
 /// Width × height of a PNG, JPEG or GIF file.
+/// "%20" → " ", "%C3%BC" → "ü" (links to files with spaces or umlauts are written like that by most editors).
+fn percent_decode(s: &str) -> String {
+    let b = s.as_bytes();
+    let mut out = Vec::with_capacity(b.len());
+    let mut i = 0;
+    while i < b.len() {
+        let hex = |c: u8| (c as char).to_digit(16);
+        if b[i] == b'%' && i + 2 < b.len() {
+            if let (Some(h), Some(l)) = (hex(b[i + 1]), hex(b[i + 2])) { out.push((h * 16 + l) as u8); i += 3; continue; }
+        }
+        out.push(b[i]);
+        i += 1;
+    }
+    String::from_utf8(out).unwrap_or_else(|_| s.to_string())
+}
+
+/// The bytes of a picture on disk, from a Markdown image link: relative to the document's folder or absolute,
+/// percent-encoded or not, also file:/// links. Web addresses aren't fetched (the export stays offline).
+fn local_picture(url: &str, base: Option<&Path>) -> Option<Vec<u8>> {
+    let url = url.trim();
+    let (url, decode_only) = match url.strip_prefix("file:///").or_else(|| url.strip_prefix("file://")) {
+        Some(rest) => (rest, true),
+        None if url.contains("://") || url.starts_with("data:") => return None,
+        None => (url, false),
+    };
+    let decoded = percent_decode(url);
+    // The decoded name first; the name as written too, in case a file really has "%" in its name.
+    let names: Vec<&str> = if decode_only || decoded == url { vec![decoded.as_str()] } else { vec![decoded.as_str(), url] };
+    names.into_iter().find_map(|name| {
+        let p = PathBuf::from(name);
+        let p = if p.is_absolute() { p } else { base.map(|b| b.join(name)).unwrap_or(p) };
+        std::fs::read(p).ok()
+    })
+}
+
 fn image_size(b: &[u8]) -> Option<(u32, u32)> {
     if b.len() > 24 && &b[..8] == b"\x89PNG\r\n\x1a\n" {
         return Some((u32::from_be_bytes([b[16], b[17], b[18], b[19]]), u32::from_be_bytes([b[20], b[21], b[22], b[23]])));
@@ -257,11 +292,7 @@ pub fn build(text: &str, lang: &str, title: &str, base: Option<&Path>, pictures:
             Event::Start(Tag::Image { dest_url, .. }) => image = Some((dest_url.to_string(), String::new())),
             Event::End(TagEnd::Image) => {
                 let (url, alt) = image.take().unwrap_or_default();
-                let file = (!url.contains("://")).then(|| {
-                    let p = PathBuf::from(&url);
-                    if p.is_absolute() { p } else { base.map(|b| b.join(&url)).unwrap_or(p) }
-                });
-                let pic = file.and_then(|p| std::fs::read(p).ok()).and_then(|b| image_size(&b).map(|s| (b, s)));
+                let pic = local_picture(&url, base).and_then(|b| image_size(&b).map(|s| (b, s)));
                 let r = match pic {
                     Some((b, (w, h))) => {
                         let ext = if b.starts_with(b"\x89PNG") { "png" } else if b.starts_with(b"GIF") { "gif" } else { "jpeg" };
@@ -485,6 +516,21 @@ mod tests {
         assert!(rels.contains("Target=\"https://x.de\" TargetMode=\"External\""));
         // Every part is well-formed enough to have matching document tags.
         assert!(doc.ends_with("</w:body></w:document>"));
+    }
+    #[test]
+    fn local_pictures_with_spaces_and_umlauts() {
+        let mut png = b"\x89PNG\r\n\x1a\n\0\0\0\rIHDR".to_vec();
+        png.extend(20u32.to_be_bytes()); png.extend(10u32.to_be_bytes()); png.extend([8, 2, 0, 0, 0]);
+        let dir = std::env::temp_dir().join(format!("md-docx-pics-{}", std::process::id()));
+        std::fs::create_dir_all(dir.join("Bilder")).unwrap();
+        for name in ["Mein Bild.png", "Grüße.png", "Bilder/Klasse 7b.png"] { std::fs::write(dir.join(name), &png).unwrap(); }
+        // How other editors write such links: percent-encoded, in <…>, or plain; also a Windows path with backslashes.
+        let md = "![a](Mein%20Bild.png)\n\n![b](<Mein Bild.png>)\n\n![c](Gr%C3%BC%C3%9Fe.png)\n\n![d](Grüße.png)\n\n![e](Bilder/Klasse%207b.png)\n\n![f](Bilder\\Klasse%207b.png)\n";
+        let z = build(md, "de", "P", Some(&dir), &[]);
+        let doc = part(&z, "word/document.xml");
+        std::fs::remove_dir_all(&dir).ok();
+        assert!(!doc.contains("[Bild:"), "a picture was not found: {doc}");
+        assert_eq!(doc.matches("<wp:extent ").count(), 6, "{doc}");
     }
     #[test]
     fn pictures_and_sizes() {

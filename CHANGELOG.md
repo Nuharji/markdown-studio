@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.10.2 — 2026-10-18
+- Fixed: Word export left out pictures whose file name has spaces or umlauts when the link is written the usual way (`![Foto](Klasse%207b.png)`, as VS Code, Typora or Obsidian write it) — the Word file showed “[Bild: …]” instead. Such links, links in `<…>` and file:/// links now find the picture.
+
 ## 1.10.1 — 2026-10-15
 - App icon with a picture of what the app does, like Slides and Plan Studio; the window and taskbar icon is now the same picture.
 
