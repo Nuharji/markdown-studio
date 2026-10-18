@@ -12,6 +12,10 @@ const THEMES: [&str; 4] = ["dark", "light", "github", "github-dark"];
 const LANGS: [&str; 3] = ["auto", "en", "de"];
 
 fn file(app: &AppHandle) -> Option<PathBuf> {
+    // Debug builds only: test copies can use their own folder (STUDIO_SHARED_DIR), so they never change the real
+    // shared settings of the installed apps.
+    #[cfg(debug_assertions)]
+    if let Ok(dir) = std::env::var("STUDIO_SHARED_DIR") { return Some(PathBuf::from(dir).join("shared.json")); }
     app.path().config_dir().ok().map(|d| d.join("Studio").join("shared.json"))
 }
 
