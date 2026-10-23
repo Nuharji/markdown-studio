@@ -1,8 +1,10 @@
-//! Settings shared by all Studio apps (the same file in every app): theme, language and the work folder, kept in
+//! Settings shared by all Studio apps (the same file in every app): theme, language, the work folder and the sync
+//! folder, kept in
 //! <config dir>/Studio/shared.json (Windows: %APPDATA%\Studio, macOS: ~/Library/Application Support/Studio,
 //! Linux: ~/.config/Studio). Studio Hub edits them; each app reads them at start and when its window gets the focus
 //! (shared.js) and writes back its own theme and language changes — so all apps look and speak alike. File dialogs
-//! start in the work folder.
+//! start in the work folder. The sync folder (e.g. in iCloud Drive, OneDrive or Dropbox) is where apps with their own
+//! data (Plan Studio's plan) keep it, so two computers share it.
 
 use serde_json::{Map, Value};
 use std::path::{Path, PathBuf};
@@ -30,7 +32,7 @@ pub fn merge(mut cur: Map<String, Value>, patch: &Map<String, Value>) -> Map<Str
             (_, Value::Null) => { cur.remove(k); continue; }
             ("theme", Value::String(s)) => THEMES.contains(&s.as_str()),
             ("lang", Value::String(s)) => LANGS.contains(&s.as_str()),
-            ("workFolder", Value::String(s)) => !s.is_empty(),
+            ("workFolder", Value::String(s)) | ("syncFolder", Value::String(s)) => !s.is_empty(),
             _ => false,
         };
         if ok { cur.insert(k.clone(), v.clone()); }
@@ -65,6 +67,13 @@ pub fn work_dir(app: &AppHandle) -> Option<PathBuf> {
     read_from(&p).get("workFolder").and_then(Value::as_str).map(PathBuf::from).filter(|d| d.is_dir())
 }
 
+/// The sync folder, when it is set and exists.
+#[allow(dead_code)]   // used by the apps that keep their own data there (Plan Studio)
+pub fn sync_dir(app: &AppHandle) -> Option<PathBuf> {
+    let p = file(app)?;
+    read_from(&p).get("syncFolder").and_then(Value::as_str).map(PathBuf::from).filter(|d| d.is_dir())
+}
+
 /// A file dialog that starts in the work folder (when one is set).
 pub fn file_dialog(app: &AppHandle) -> tauri_plugin_dialog::FileDialogBuilder<tauri::Wry> {
     use tauri_plugin_dialog::DialogExt;
@@ -79,8 +88,9 @@ mod tests {
 
     #[test]
     fn shared_settings_merge_and_file() {
-        let m = merge(Map::new(), json!({"theme": "light", "lang": "de", "workFolder": "/tmp", "evil": 1, "size": "x"}).as_object().unwrap());
-        assert_eq!(Value::Object(m.clone()), json!({"theme": "light", "lang": "de", "workFolder": "/tmp"}));
+        let m = merge(Map::new(), json!({"theme": "light", "lang": "de", "workFolder": "/tmp", "syncFolder": "/sync", "evil": 1, "size": "x"}).as_object().unwrap());
+        assert_eq!(Value::Object(m.clone()), json!({"theme": "light", "lang": "de", "workFolder": "/tmp", "syncFolder": "/sync"}));
+        let m = merge(m, json!({"syncFolder": null}).as_object().unwrap());
         let m = merge(m, json!({"theme": "neon", "lang": null}).as_object().unwrap());
         assert_eq!(Value::Object(m.clone()), json!({"theme": "light", "workFolder": "/tmp"}), "bad values are ignored, null removes");
         let dir = std::env::temp_dir().join(format!("studio-shared-test-{}", std::process::id()));
