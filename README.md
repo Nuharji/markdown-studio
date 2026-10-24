@@ -44,4 +44,6 @@ Dev mode with live reload: `npx @tauri-apps/cli@2 icon app-icon.png` once, then 
   (macOS: right-click the app → Open). Signing needs your own certificates.
 - `.md` / `.markdown` files are associated with the app by the installers.
 
+Folders (sidebar, subfolders, graph of linked notes): `src-tauri/src/folder.rs` (tree, links, rename/move) and `ui/folder.js` (sidebar, graph drawing).
+
 Markdown → HTML: `src-tauri/src/markdown.rs` (pulldown-cmark); the UI draws math (KaTeX), diagrams (Mermaid) and code colors (highlight.js).

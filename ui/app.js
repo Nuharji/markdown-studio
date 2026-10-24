@@ -113,7 +113,8 @@ function saveNow() {
   storeCurrent();
   try { localStorage.setItem(STORE, JSON.stringify({
     docs: docs.map(d => ({name: d.name, content: d.content, dirty: d.dirty, sel: d.sel, fmt: d.fmt || null,
-      path: typeof d.handle === 'string' ? d.handle : null})), active, settings, untitledN, recent})); } catch (e) {}
+      path: typeof d.handle === 'string' ? d.handle : null})), active, settings, untitledN, recent,
+    folder: window.Folder ? Folder.state() : null})); } catch (e) {}
 }
 function saveSession() { clearTimeout(saveT); saveT = setTimeout(saveNow, 300); }
 window.addEventListener('beforeunload', saveNow);
@@ -136,10 +137,11 @@ $('#recent').addEventListener('click', async e => {
 });
 
 /* Actions that make sense with no document open; everything else is disabled on the start screen. */
-const NO_DOC = new Set(['toggleAutoHide', 'newDoc', 'newFromTemplate', 'openFile', 'settings', 'langAuto', 'langEn', 'langDe', 'themeDark', 'themeLight', 'themeGithub',
+const NO_DOC = new Set(['toggleAutoHide', 'newDoc', 'newFromTemplate', 'openFile', 'openFolder', 'closeFolder', 'toggleFiles', 'graph', 'settings', 'langAuto', 'langEn', 'langDe', 'themeDark', 'themeLight', 'themeGithub',
   'themeGithubDark', 'openGuide', 'refMd', 'refLatex', 'shortcuts', 'about', 'togglePanels', 'toggleSync', 'toggleWrap', 'togglePaper',
   'zoomIn', 'zoomOut', 'zoomReset', 'viewEdit', 'viewSplit', 'viewPreview']);
-const allowed = act => !!cur() || NO_DOC.has(act);
+const FOLDER_ACTS = new Set(['openFolder', 'closeFolder', 'toggleFiles', 'graph']);
+const allowed = act => (FOLDER_ACTS.has(act) ? !!invoke && (act !== 'closeFolder' || !!(window.Folder && Folder.root)) : true) && (!!cur() || NO_DOC.has(act));
 function run(act) { if (allowed(act)) A[act](); }
 function syncDisabled() {
   $$('[data-act]').forEach(b => b.disabled = !allowed(b.dataset.act));
@@ -148,6 +150,7 @@ function syncDisabled() {
 
 function loadActive() {
   const d = cur();
+  if (window.Folder) Folder.onActive();
   $('#emptyState').hidden = !!d; workspace.hidden = !d;
   syncDisabled();
   if (!d) {
@@ -281,7 +284,7 @@ function updateTitle() {
 }
 function markDirty(flag) {
   const d = cur(); if (!d) return;
-  if (d.dirty !== flag) { d.dirty = flag; renderTabs(); }
+  if (d.dirty !== flag) { d.dirty = flag; renderTabs(); if (window.Folder) Folder.onDirty(); }
   updateTitle(); saveSession();
 }
 
@@ -291,6 +294,7 @@ ed.addEventListener('input', () => {
   markDirty(true);
   clearTimeout(rT); rT = setTimeout(render, ed.value.length > 60000 ? 350 : 120);
   if (settings.dock && settings.dockTab === 'sources' && window.School) School.renderSourcesSoon();
+  if (window.Folder) Folder.typed();
   updateCursor();
 });
 
@@ -608,6 +612,7 @@ async function save(as) {
       d.fmt = r.fmt;
       d.handle = r.path; d.name = r.name; addRecent(r.path, r.name); d.disk = d.content; stampOf(d);
       markDirty(false); renderTabs(); toast(t(fellBack ? 'toast.savedUtf8' : 'toast.saved', {name: d.name}));
+      if (window.Folder) Folder.saved();
     } catch (e) { toast(t('toast.saveFail', {e})); }
     return;
   }
@@ -809,6 +814,8 @@ const ICONS = {
   diagram: '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="6" rx="1"/><rect x="14" y="15" width="7" height="6" rx="1"/><path d="M6.5 9v4a2 2 0 0 0 2 2H14"/></svg>',
   sketch: '<svg viewBox="0 0 24 24"><path d="M3 17c3-6 5-9 7-9s1 6 3 6 3-5 5-5 2 2 3 3"/><path d="m15 21 6-6M3 21h8"/></svg>',
   cite: '<svg viewBox="0 0 24 24"><path d="M4 19V5a2 2 0 0 1 2-2h13v15H6a2 2 0 0 0-2 2zm0 0a2 2 0 0 0 2 2h13"/><path d="M9 8h6M9 12h4"/></svg>',
+  folders: '<svg viewBox="0 0 24 24"><path d="M3 5h6l2 2h10v12H3z"/><path d="M3 10h18"/></svg>',
+  graph: '<svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="8" r="2.5"/><circle cx="9" cy="18" r="2.5"/><path d="M8.3 7.1l7.4.6M7 8.3l1.4 7.3M16.6 10.1l-5.9 6"/></svg>',
   wiki: '<svg viewBox="0 0 24 24"><path d="M8 4H5v16h3M16 4h3v16h-3M9 12h6"/></svg>',
   sun: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',
   moon: '<svg viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>',
@@ -837,7 +844,8 @@ const A = {
   toggleAutoHide: () => { settings.autoHide = !settings.autoHide; applySettings(); },
   nextIssue: () => nextIssue(),
   newDoc: () => openDoc(null, ''),
-  openFile, save: () => save(false), reloadFile, saveAs: () => save(true), exportHtml,
+  openFile, openFolder: () => Folder.pick(), closeFolder: () => Folder.close(), toggleFiles: () => Folder.toggle(), graph: () => Folder.showGraph(),
+  save: () => save(false), reloadFile, saveAs: () => save(true), exportHtml,
   newFromTemplate: () => School.templates(), exportDocx: () => School.exportDocx(), exportPdf: () => School.exportPdf(),
   sketch: () => School.sketch(), cite: () => showDock('sources'), wikilink: () => wrap('[[', ']]', lang === 'de' ? 'Notizname' : 'note name'),
   print: async () => {
@@ -927,7 +935,7 @@ const A = {
 
 // Menu items: [action, shortcut, checked(), nativeKey]; strings are separators, '#key' is a section label.
 const MENUS = [
-  ['file', [['newDoc', 'Alt+N'], ['newFromTemplate', 'Alt+Shift+N'], ['openFile', 'Ctrl+O'], '-', ['save', 'Ctrl+S'], ['saveAs', 'Ctrl+Shift+S'], ['reloadFile', 'F5'], '-',
+  ['file', [['newDoc', 'Alt+N'], ['newFromTemplate', 'Alt+Shift+N'], ['openFile', 'Ctrl+O'], ['openFolder', 'Ctrl+Shift+O'], ['closeFolder'], '-', ['save', 'Ctrl+S'], ['saveAs', 'Ctrl+Shift+S'], ['reloadFile', 'F5'], '-',
     ['exportDocx', 'Ctrl+Shift+E'], ['exportPdf'], ['exportHtml', 'Ctrl+E'], ['print', 'Ctrl+P'], '-', ['closeTab', 'Alt+W']]],
   ['edit', [['undo', 'Ctrl+Z', null, true], ['redo', 'Ctrl+Y', null, true], '-', ['find', 'Ctrl+F'], ['findNext', 'F3'], ['nextIssue', 'F7'], '-',
     ['selectAll', 'Ctrl+A', null, true]]],
@@ -938,7 +946,7 @@ const MENUS = [
     ['mathInline', 'Ctrl+M'], ['mathBlock', 'Ctrl+Shift+M'], '-', ['sketch', 'Ctrl+Shift+Y'], ['cite', 'Ctrl+Shift+Q'], ['wikilink', 'Ctrl+Shift+W'], '-', ['toc'], ['date']]],
   ['view', [['viewEdit', 'Alt+1', () => settings.view === 'edit'], ['viewSplit', 'Alt+2', () => settings.view === 'split'],
     ['viewPreview', 'Alt+3', () => settings.view === 'preview'], '-',
-    ['togglePanels', 'Ctrl+\\', () => settings.dock], ['toggleAutoHide', null, () => settings.autoHide], ['toggleSync', null, () => settings.sync],
+    ['toggleFiles', 'Alt+B', () => !!(window.Folder && Folder.visible)], ['graph', 'Alt+G', () => !!(window.Folder && Folder.graphOpen)], ['togglePanels', 'Ctrl+\\', () => settings.dock], ['toggleAutoHide', null, () => settings.autoHide], ['toggleSync', null, () => settings.sync],
     ['toggleWrap', null, () => settings.wrap], ['togglePaper', null, isPaperDark], '-',
     ['zoomIn'], ['zoomOut'], ['zoomReset']]],
   ['settings', [['settings', 'Ctrl+,'], '-', '#menu.language',
@@ -1005,8 +1013,8 @@ const RAIL = [
 ];
 function buildToolbars() {
   const fill = (id, list) => { const box = $(id); box.innerHTML = ''; list.forEach(([a, i]) => box.append(makeBtn(a, i))); };
-  fill('#fileBtns', [['newDoc', ICONS.newf], ['openFile', ICONS.open], ['save', ICONS.save], ['undo', ICONS.undo], ['redo', ICONS.redo], ['find', ICONS.search]]);
-  fill('#viewBtns', [['togglePaper', ICONS.sun], ['print', ICONS.print], ['togglePanels', ICONS.panel], ['settings', ICONS.gear], ['openGuide', ICONS.help]]);
+  fill('#fileBtns', [['newDoc', ICONS.newf], ['openFile', ICONS.open], ['toggleFiles', ICONS.folders], ['save', ICONS.save], ['undo', ICONS.undo], ['redo', ICONS.redo], ['find', ICONS.search]]);
+  fill('#viewBtns', [['togglePaper', ICONS.sun], ['print', ICONS.print], ['graph', ICONS.graph], ['togglePanels', ICONS.panel], ['settings', ICONS.gear], ['openGuide', ICONS.help]]);
   const tools = $('#tools'); tools.innerHTML = '';
   RAIL.forEach(r => {
     if (r === '-') { const s = document.createElement('div'); s.className = 'sep'; return tools.append(s); }
@@ -1106,7 +1114,7 @@ function applyLanguage() {
   $('#splitter').title = t('ui.resize');
   buildMenubar(); buildToolbars();
   cardsBuilt = false;
-  if (booted) { renderTabs(); updateTitle(); render(); updateCursor(); renderRecent(); syncDisabled(); updateSpellStatus(); }
+  if (booted) { renderTabs(); updateTitle(); render(); updateCursor(); renderRecent(); syncDisabled(); updateSpellStatus(); if (window.Folder) Folder.language(); }
 }
 let lastMermaidTheme = null, lastSpell = null;
 let appliedKeys = '{}';
@@ -1151,9 +1159,16 @@ function applySettings() {
   ed.style.whiteSpace = settings.wrap ? 'pre-wrap' : 'pre';
   $('#dock').classList.toggle('hidden', !settings.dock);
   $$('#dockTabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === settings.dockTab));
+  // The active tab stays in view when the tabs don't fit (scrolled by hand: scrollIntoView would move the app frame too).
+  const tabBar = $('#dockTabs'), tabOn = tabBar.querySelector('.active');
+  if (tabOn && settings.dock) {
+    const b = tabBar.getBoundingClientRect(), r = tabOn.getBoundingClientRect();
+    if (r.left < b.left) tabBar.scrollLeft -= b.left - r.left; else if (r.right > b.right) tabBar.scrollLeft += r.right - b.right;
+  }
   $$('.dpanel').forEach(p => p.classList.toggle('active', p.dataset.panel === settings.dockTab));
   if (settings.dock && (settings.dockTab === 'md' || settings.dockTab === 'latex')) buildCards();
   if (settings.dock && settings.dockTab === 'sources' && window.School) School.renderSources();
+  if (settings.dock && settings.dockTab === 'links' && window.Folder) Folder.renderLinks();
   $('#zVal').textContent = settings.zoom + '%';
   saveSession();
 }
@@ -1235,6 +1250,7 @@ window.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     if ($('#modal').classList.contains('show')) closeModal();
     else if (menuOpen) closeMenus();
+    else if (window.Folder && Folder.graphOpen) Folder.showGraph(false);
     else if ($('#findbar').classList.contains('show')) closeFind();
     return;
   }
@@ -1248,6 +1264,8 @@ if (window.Native) {
   const item = act => ({id: act, label: t('a.' + act), accel: keyOf(act) || null, enabled: allowed(act)});
   let ctxTab = -1, ctxDiagram = null;
   Native.setProvider(e => {
+    const fd = window.Folder && Folder.menu(e);
+    if (fd) return fd;
     const tab = e.target.closest('.tab');
     if (tab) {
       ctxTab = +tab.dataset.i;
@@ -1271,6 +1289,7 @@ if (window.Native) {
     if (id === 'tab:close') return closeTab(ctxTab);
     if (id === 'tab:others') { const keep = docs[ctxTab]; for (const d of [...docs]) if (d !== keep) await closeTab(docs.indexOf(d)); return; }
     if (id.startsWith('sp:')) return spellAction(id);
+    if (id.startsWith('fd:')) return Folder.action(id);
     if (id.startsWith('dg:')) { const b = ctxDiagram && ctxDiagram.querySelector(`[data-dg="${id.slice(3)}"]`); if (b) b.click(); return; }
     run(id);
   });
@@ -1309,6 +1328,7 @@ window.__md = {docs: () => docs, cur, openNative, A, ed, runSpell, spellIssues: 
   applySettings();
   loadActive();
   if (cur()) ed.setSelectionRange(cur().sel[0], cur().sel[1]);
+  if (window.Folder) Folder.restore(saved && saved.folder);
   if (invoke) {
     // Files passed on the command line / via "Open with", and (macOS) files opened while running.
     invoke('initial_files').then(openNative).catch(e => toast(t('toast.openFail', {e})));

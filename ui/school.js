@@ -2,7 +2,7 @@
    - Sources panel: the sources of the ```quellen block, a form to add one, citing with [@key] (markdown.rs formats them)
    - Templates: Referat, Hausarbeit / Facharbeit, Versuchsprotokoll, Unterrichtsnotiz, Lernzettel
    - Sketches: a drawing pad (mouse, pen with pressure) whose strokes are kept as a ```sketch block
-   - Notes: [[Note]] links open Note.md from the same folder, or create it there
+   - Notes: [[Note]] links open Note.md from the same folder (or from anywhere in the opened folder), or create it there
    - Export as Word (.docx, written in Rust: docx.rs) and as PDF (the print dialog's "Save as PDF") */
 'use strict';
 window.School = (() => {
@@ -79,7 +79,9 @@ window.School = (() => {
     const d = cur();
     if (!invoke || !d || typeof d.handle !== 'string') return toast(t('note.saveFirst'));
     try {
-      const f = await invoke('find_note', {from: d.handle, name}) || await invoke('create_note', {from: d.handle, name});
+      // With a folder open, [[Name]] finds the note anywhere in it (folder.js / folder.rs).
+      const root = window.Folder && Folder.root && Folder.under(d.handle, Folder.root) ? Folder.root : null;
+      const f = await invoke('find_note', {from: d.handle, name, root}) || await invoke('create_note', {from: d.handle, name});
       openNative([f]);
     } catch (e) { toast(String(e)); }
   }

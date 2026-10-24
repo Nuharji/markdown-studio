@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.11.0 — 2026-10-24
+- New: Open a whole folder (File → Open Folder…, Ctrl+Shift+O). A sidebar shows its subfolders and notes (folders first, “Teil 2” before “Teil 10”), the open note highlighted; filter by name; Alt+B shows or hides it. The folder is opened again at the next start; recently opened folders are listed.
+- New: Sort notes into subfolders — drag notes and folders onto a folder, or right-click → Move to…; new notes and subfolders right in the tree (buttons or right-click), rename with F2. Renaming a note updates the `[[links]]` to it in the other notes. Open tabs follow when a note is moved or renamed.
+- New: Graph of notes (View → Graph of Notes, Alt+G): every note of the folder and its `[[links]]` and links to other .md files as a network. Colors are the subfolders (click one in the legend to see only it), notes that are linked but not created yet are hollow (a click creates them). Hover shows a note’s links, click opens it, drag moves notes, wheel zooms, double-click fits; search highlights notes.
+- New: Links tab in the side panel: the current note’s neighborhood as a small graph (depth 1–3), what links to it and what it links to.
+- With a folder open, `[[Name]]` finds the note anywhere in it (the one next to the current note first), so moving notes into subfolders never breaks links. Dragging a note from the sidebar into the editor writes a `[[link]]` to it.
+- Fixed: Word export on macOS and Linux left out pictures linked with Windows backslashes (`Bilder\Bild.png`).
+
 ## 1.10.2 — 2026-10-18
 - Fixed: Word export left out pictures whose file name has spaces or umlauts when the link is written the usual way (`![Foto](Klasse%207b.png)`, as VS Code, Typora or Obsidian write it) — the Word file showed “[Bild: …]” instead. Such links, links in `<…>` and file:/// links now find the picture.
 

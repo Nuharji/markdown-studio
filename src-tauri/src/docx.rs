@@ -50,10 +50,15 @@ fn local_picture(url: &str, base: Option<&Path>) -> Option<Vec<u8>> {
     };
     let decoded = percent_decode(url);
     // The decoded name first; the name as written too, in case a file really has "%" in its name.
-    let names: Vec<&str> = if decode_only || decoded == url { vec![decoded.as_str()] } else { vec![decoded.as_str(), url] };
+    let mut names: Vec<String> = if decode_only || decoded == url { vec![decoded.clone()] } else { vec![decoded.clone(), url.to_string()] };
+    // Written on Windows (Bilder\Bild.png): on macOS and Linux the backslash doesn't separate folders.
+    if !cfg!(windows) {
+        let slashed: Vec<String> = names.iter().filter(|n| n.contains('\\')).map(|n| n.replace('\\', "/")).collect();
+        names.extend(slashed);
+    }
     names.into_iter().find_map(|name| {
-        let p = PathBuf::from(name);
-        let p = if p.is_absolute() { p } else { base.map(|b| b.join(name)).unwrap_or(p) };
+        let p = PathBuf::from(&name);
+        let p = if p.is_absolute() { p } else { base.map(|b| b.join(&name)).unwrap_or(p) };
         std::fs::read(p).ok()
     })
 }

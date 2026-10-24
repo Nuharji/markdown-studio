@@ -4,6 +4,7 @@
 mod shared;
 mod docx;
 mod edit;
+mod folder;
 mod markdown;
 mod spell;
 
@@ -148,9 +149,16 @@ async fn open_files(app: AppHandle) -> Result<Vec<Doc>, String> {
         .collect()
 }
 
-/// A linked note ([[Name]]): Name.md (or another Markdown extension) in the folder of the note `from`, any case.
+/// A linked note ([[Name]], [[Name#Heading]]): Name.md (or another Markdown extension) in the folder of the note
+/// `from`, any case — or, when a folder is open (`root`), anywhere in it (folder.rs: resolve_note).
 #[tauri::command]
-async fn find_note(from: String, name: String) -> Result<Option<Doc>, String> {
+async fn find_note(from: String, name: String, root: Option<String>) -> Result<Option<Doc>, String> {
+    let name = name.split('#').next().unwrap_or("").to_string();
+    if let Some(root) = root.filter(|r| Path::new(&from).starts_with(r)) {
+        let root = PathBuf::from(root);
+        let notes = folder::note_list(&root);
+        return match folder::resolve_note(&root, &notes, Some(Path::new(&from)), &name) { Some(p) => load(&p).map(Some), None => Ok(None) };
+    }
     let dir = Path::new(&from).parent().ok_or("no folder")?;
     let want = name.trim().to_lowercase();
     for e in fs::read_dir(dir).map_err(|e| e.to_string())?.flatten() {
@@ -166,6 +174,7 @@ async fn find_note(from: String, name: String) -> Result<Option<Doc>, String> {
 #[tauri::command]
 async fn create_note(from: String, name: String) -> Result<Doc, String> {
     let dir = Path::new(&from).parent().ok_or("no folder")?;
+    let name = name.split('#').next().unwrap_or("").to_string();
     let clean: String = name.trim().chars().filter(|c| !"/\\:*?\"<>|".contains(*c)).collect();
     if clean.is_empty() { return Err("empty name".into()); }
     let path = dir.join(format!("{clean}.md"));
@@ -415,6 +424,12 @@ fn main() {
             read_file,
             find_note,
             create_note,
+            folder::open_folder,
+            folder::folder_tree,
+            folder::folder_graph,
+            folder::folder_create,
+            folder::folder_rename,
+            folder::folder_move,
             file_stamps,
             markdown::md_render,
             markdown::md_sources,
@@ -489,11 +504,11 @@ mod tests {
         fs::write(dir.join("Mathe 1.md"), "# Mathe 1\n").unwrap();
         let from = dir.join("Heute.md").to_string_lossy().into_owned();
         use tauri::async_runtime::block_on as run;
-        assert_eq!(run(find_note(from.clone(), "mathe 1".into())).unwrap().unwrap().name, "Mathe 1.md");
-        assert!(run(find_note(from.clone(), "Bio".into())).unwrap().is_none());
+        assert_eq!(run(find_note(from.clone(), "mathe 1".into(), None)).unwrap().unwrap().name, "Mathe 1.md");
+        assert!(run(find_note(from.clone(), "Bio".into(), None)).unwrap().is_none());
         let made = run(create_note(from.clone(), "Bio: Zelle".into())).unwrap();
         assert_eq!((made.name.as_str(), made.content.as_str()), ("Bio Zelle.md", "# Bio: Zelle\n\n"));
-        assert!(run(find_note(from, "bio zelle".into())).unwrap().is_some());
+        assert!(run(find_note(from, "bio zelle".into(), None)).unwrap().is_some());
     }
 
     #[test]

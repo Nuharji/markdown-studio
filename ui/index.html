@@ -309,14 +309,83 @@ select:focus,input:focus{border-color:var(--accent)}
 .recent button{display:flex;gap:10px;align-items:center;background:none;border:0;border-radius:var(--radius);padding:7px 10px;text-align:left}
 .recent button:hover{background:var(--hover)}
 .recent small{color:var(--dim);margin-left:auto;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;direction:rtl}
+/* Folder sidebar (folder.js) */
+.main.has-files{grid-template-columns:44px auto 1fr auto}
+body.ah .main.has-files{grid-template-columns:auto 1fr auto}
+.files{position:relative;display:flex;flex-direction:column;min-height:0;background:var(--panel);border-right:1px solid var(--line);width:260px}
+.files-head{display:flex;align-items:center;gap:1px;height:30px;padding:0 4px 0 10px;background:var(--chrome);border-bottom:1px solid var(--line);flex:none}
+.files-name{flex:1;font-weight:600;color:var(--strong);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px;text-transform:uppercase;letter-spacing:.06em}
+.files-head .ibtn{height:24px;min-width:24px;padding:0 3px}
+.files-head .ibtn svg{width:15px;height:15px}
+.files-filter{padding:6px 8px;flex:none}
+.files-filter .field-in{width:100%;box-sizing:border-box}
+.files-tree{flex:1;overflow:auto;padding:2px 4px 10px;outline:0}
+.files-tree.ft-drop{background:color-mix(in srgb,var(--accent) 8%,transparent)}
+.files-foot{flex:none;padding:4px 10px;color:var(--dim);font-size:11px;border-top:1px solid var(--border);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.files-resize{position:absolute;top:0;right:-3px;bottom:0;width:6px;cursor:col-resize;z-index:5}
+.files-resize:hover,.files-resize.drag{background:var(--accent)}
+.ft-row{display:flex;align-items:center;gap:5px;height:24px;padding-right:6px;border-radius:var(--radius);cursor:pointer;color:var(--text);white-space:nowrap;user-select:none}
+.ft-row:hover{background:var(--hover)}
+.ft-row.sel{background:var(--hover)}
+.ft-row.active{background:color-mix(in srgb,var(--accent) 22%,transparent);color:var(--strong)}
+.ft-row.ft-drop{outline:1px dashed var(--accent);background:color-mix(in srgb,var(--accent) 14%,transparent)}
+.ft-row svg,.ft-recent svg,.ft-move svg{width:15px;height:15px;flex:none;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;opacity:.75}
+.ft-dir svg{color:var(--accent);opacity:.9}
+.ft-caret{width:10px;flex:none;color:var(--dim);font-size:10px;text-align:center}
+.ft-name{flex:1;overflow:hidden;text-overflow:ellipsis}
+.ft-row small{color:var(--dim);font-size:10px}
+.ft-row.dirty .ft-name::after{content:" ●";color:var(--accent)}
+.ft-input{flex:1;min-width:0;height:20px;background:var(--input-bg);color:var(--text);border:1px solid var(--accent);border-radius:3px;padding:0 4px;font:inherit;outline:0}
+.ft-recent{display:flex;align-items:center;gap:8px;width:100%;background:none;border:0;border-radius:var(--radius);padding:6px 8px;text-align:left;color:var(--text)}
+.ft-recent:hover{background:var(--hover)}
+.ft-moves{display:flex;flex-direction:column;gap:1px;max-height:50vh;overflow:auto}
+.ft-move{display:flex;align-items:center;gap:8px;background:none;border:0;border-radius:var(--radius);padding:6px 10px;text-align:left;color:var(--text)}
+.ft-move:hover{background:var(--dd-hover-bg);color:var(--dd-hover-fg)}
+.ft-move:disabled{opacity:.4}
+/* Graph of notes (folder.js) */
+.graph-view{flex:1;display:flex;flex-direction:column;min-height:0;background:var(--panel);position:relative}
+.center.graph-on>.workspace,.center.graph-on>.empty-state,.center.graph-on>.findbar{display:none!important}
+.graph-bar{display:flex;align-items:center;gap:8px;padding:5px 10px;white-space:nowrap;overflow:hidden;background:var(--chrome2);border-bottom:1px solid var(--line);flex:none}
+.graph-bar label{display:flex;align-items:center;gap:4px;color:var(--dim)}
+.graph-bar>*{flex:none}
+.graph-bar .flex{flex:1 1 0}
+.graph-bar #graphStats,.graph-bar label{flex:0 1 auto;min-width:0;overflow:hidden}
+.graph-bar label span{overflow:hidden;text-overflow:ellipsis}
+.graph-bar .field-in{flex:0 1 170px;min-width:70px;width:170px}
+.graph-bar .gtitle{font-weight:600;color:var(--strong)}
+.graph-bar #graphStats{color:var(--dim);text-overflow:ellipsis}
+.graph-view canvas{flex:1;min-height:0;width:100%;display:block;touch-action:none}
+.graph-legend{position:absolute;left:10px;bottom:30px;display:flex;flex-direction:column;align-items:flex-start;gap:2px;max-height:60%;overflow:auto}
+.gl-item{display:flex;align-items:center;gap:6px;background:color-mix(in srgb,var(--panel) 85%,transparent);border:1px solid transparent;border-radius:var(--radius);padding:2px 8px;color:var(--text);font-size:11px}
+.gl-item:hover{border-color:var(--border)}
+.gl-item.active{border-color:var(--accent)}
+.gl-item.off{opacity:.45}
+.gl-item i{width:10px;height:10px;border-radius:50%;flex:none}
+.gl-item small{color:var(--dim)}
+.graph-hint{position:absolute;right:12px;bottom:8px;color:var(--dim);font-size:11px;pointer-events:none}
+/* Links tab */
+#localWrap{margin-bottom:6px}
+#localCanvas{width:100%;height:230px;display:block;background:var(--input-bg);border:1px solid var(--card-border);border-radius:var(--radius);touch-action:none}
+.lk-tools{display:flex;align-items:center;gap:6px;margin-top:6px}
+.lk-tools span{color:var(--dim)}
+.lk-tools .seg button{height:22px;padding:0 9px}
+.lk-item{display:flex;align-items:center;gap:7px;width:100%;background:none;border:0;border-radius:var(--radius);padding:5px 6px;text-align:left;color:var(--text)}
+.lk-item:hover{background:var(--hover)}
+.lk-item i{width:9px;height:9px;border-radius:50%;flex:none;border:1px solid transparent}
+.lk-item.missing i{border:1px dashed var(--dim)}
+.lk-item.missing span{color:var(--dim);font-style:italic}
+.lk-item span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lk-item small{margin-left:auto;color:var(--dim);font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:50%}
+.lk-none{color:var(--dim);padding:2px 6px 6px;line-height:1.5}
 .ibtn:disabled,.btn-sm:disabled,.cta:disabled,select:disabled{opacity:.35;pointer-events:none}
 .dropdown button:disabled{opacity:.4}.dropdown button:disabled:hover{background:none;color:inherit}
 
 /* Dock */
 .dock{width:330px;background:var(--panel);border-left:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
 .dock.hidden{display:none}
-.dock-tabs{display:flex;background:var(--chrome);border-bottom:1px solid var(--line);height:30px;flex:none}
-.dock-tabs button{background:none;border:0;border-bottom:2px solid transparent;color:var(--dim);padding:0 11px;font-weight:600}
+.dock-tabs{display:flex;background:var(--chrome);border-bottom:1px solid var(--line);height:30px;flex:none;overflow-x:auto;scrollbar-width:none}
+.dock-tabs::-webkit-scrollbar{display:none}
+.dock-tabs button{flex:none;background:none;border:0;border-bottom:2px solid transparent;color:var(--dim);padding:0 8px;font-weight:600;white-space:nowrap}
 .dock-tabs button:hover{color:var(--text)}
 .dock-tabs button.active{color:var(--strong);border-bottom-color:var(--dock-ind)}
 .dock-body{flex:1;overflow:auto;padding:10px}
@@ -472,6 +541,18 @@ input[type=range]{width:100%;max-width:360px;accent-color:var(--accent)}
 
 <div class="main">
   <aside class="tools" id="tools"></aside>
+  <aside class="files" id="files" hidden>
+    <div class="files-head">
+      <span class="files-name" id="filesName"></span>
+      <button class="ibtn" data-fd="newNote" data-fd-root="1"></button><button class="ibtn" data-fd="newFolder" data-fd-root="1"></button>
+      <button class="ibtn" data-fd="graph" data-fd-root="1"></button><button class="ibtn" data-fd="collapse" data-fd-root="1"></button>
+      <button class="ibtn" data-fd="close" data-fd-root="1"></button>
+    </div>
+    <div class="files-filter"><input class="field-in" id="filesFilter" data-i18n-ph="fd.filter" spellcheck="false"></div>
+    <div class="files-tree" id="filesTree" tabindex="0"></div>
+    <div class="files-foot" id="filesFoot"></div>
+    <div class="files-resize" id="filesResize"></div>
+  </aside>
   <section class="center">
     <div class="tabs" id="tabs"></div>
     <div class="findbar" id="findbar">
@@ -498,6 +579,19 @@ input[type=range]{width:100%;max-width:360px;accent-color:var(--accent)}
         <div class="canvas" id="canvas"><article class="paper md" id="paper"></article></div>
       </div>
     </div>
+    <div class="graph-view" id="graphView" hidden>
+      <div class="graph-bar">
+        <span class="gtitle" data-i18n="a.graph"></span><span id="graphStats"></span>
+        <span class="flex"></span>
+        <input class="field-in" id="graphSearch" data-i18n-ph="gr.search" spellcheck="false">
+        <label><input type="checkbox" id="graphMissing" checked> <span data-i18n="gr.missing"></span></label>
+        <button class="btn-sm" id="graphFit" data-i18n="gr.fit"></button>
+        <button class="ibtn" id="graphClose" data-i18n-title="gr.close">&#10005;</button>
+      </div>
+      <canvas id="graphCanvas"></canvas>
+      <div class="graph-legend" id="graphLegend"></div>
+      <div class="graph-hint" data-i18n="gr.hint"></div>
+    </div>
     <div class="empty-state" id="emptyState" hidden>
       <div class="big-tile">Md</div>
       <h1 data-i18n="ui.emptyTitle"></h1>
@@ -505,6 +599,7 @@ input[type=range]{width:100%;max-width:360px;accent-color:var(--accent)}
       <div class="empty-actions">
         <button class="btn-sm primary" data-act="newDoc" data-i18n="ui.newDocTip"></button>
         <button class="btn-sm" data-act="openFile" data-i18n="a.openFile"></button>
+        <button class="btn-sm" data-act="openFolder" data-i18n="a.openFolder"></button>
         <button class="btn-sm" data-act="openGuide" data-i18n="a.openGuide"></button>
       </div>
       <div class="recent" id="recent"></div>
@@ -515,6 +610,7 @@ input[type=range]{width:100%;max-width:360px;accent-color:var(--accent)}
       <button data-tab="outline" data-i18n="ui.outline"></button>
       <button data-tab="md">Markdown</button>
       <button data-tab="latex">LaTeX</button>
+      <button data-tab="links" data-i18n="ui.links"></button>
       <button data-tab="sources" data-i18n="ui.sources"></button>
       <button data-tab="props" data-i18n="ui.properties"></button>
     </div>
@@ -532,6 +628,14 @@ input[type=range]{width:100%;max-width:360px;accent-color:var(--accent)}
         <div class="glyphs" id="glyphs"></div>
         <div class="sect">Syntax</div>
         <div id="latexCards"></div>
+      </div>
+      <div class="dpanel" data-panel="links">
+        <div id="localWrap" hidden>
+          <canvas id="localCanvas"></canvas>
+          <div class="lk-tools"><span data-i18n="fd.depth"></span><div class="seg" id="localDepth"><button data-depth="1">1</button><button data-depth="2">2</button><button data-depth="3">3</button></div>
+            <span class="flex"></span><button class="btn-sm" id="localWhole" data-i18n="fd.wholeGraph"></button></div>
+        </div>
+        <div id="linksList"></div>
       </div>
       <div class="dpanel" data-panel="sources">
         <div class="src-form">
@@ -1407,5 +1511,6 @@ flowchart LR
 <script src="loadbar.js"></script>
 <script src="app.js"></script>
 <script src="school.js"></script>
+<script src="folder.js"></script>
 </body>
 </html>
