@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.12.0 — 2026-10-24
+- New: Send to Agent Studio (File menu, Ctrl+Shift+A, or right-click in the editor): the note or the selection with a task
+  for Claude — Proofread (as a new file "… (proofread).md"), Summarize, Study sheet, Explain / check facts, or your own
+  task. The answer and the new files come back as a card at the bottom right; a Markdown file opens here with one click.
+  An unsaved note goes as its text. Needs Agent Studio 0.8 or later.
+
 ## 1.11.0 — 2026-10-24
 - New: Open a whole folder (File → Open Folder…, Ctrl+Shift+O). A sidebar shows its subfolders and notes (folders first, “Teil 2” before “Teil 10”), the open note highlighted; filter by name; Alt+B shows or hides it. The folder is opened again at the next start; recently opened folders are listed.
 - New: Sort notes into subfolders — drag notes and folders onto a folder, or right-click → Move to…; new notes and subfolders right in the tree (buttons or right-click), rename with F2. Renaming a note updates the `[[links]]` to it in the other notes. Open tabs follow when a note is moved or renamed.

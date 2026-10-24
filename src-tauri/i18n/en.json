@@ -351,5 +351,14 @@
   "gr.filterTip": "Click to show only this folder",
   "gr.all": "All folders",
   "gr.orphans": "Notes without links",
-  "toast.folderFail": "Couldn't open the folder: {e}"
+  "toast.folderFail": "Couldn't open the folder: {e}",
+  "a.sendToAgent": "Send to Agent Studio…",
+  "agent.proofread": "Proofread",
+  "agent.proofreadTask": "Proofread the text (or the selection, when one is sent): spelling, grammar, style and clarity. Save the improved version as a new file “{name} (proofread).md” next to it and list the most important changes.",
+  "agent.summary": "Summarize",
+  "agent.summaryTask": "Summarize the text (or the selection) in a few sentences and the key points as a list.",
+  "agent.cards": "Study sheet",
+  "agent.cardsTask": "Turn the text into a study sheet in Markdown (headings, key points, 5 test questions with answers) and save it as a new file “{name} – study sheet.md” next to it.",
+  "agent.explain": "Explain / check facts",
+  "agent.explainTask": "Explain the selection in simple words and check whether the facts in it are right."
 }

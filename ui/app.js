@@ -841,6 +841,19 @@ let toastT;
 function toast(msg) { const el = $('#toast'); el.textContent = msg; el.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('show'), 2400); }
 
 const A = {
+  /* "Send to Agent Studio" (agentlink.js): the note (or the selection) with a task for Claude; the answer and new files
+     come back as a card in the corner. An unsaved note goes as its text. */
+  sendToAgent: () => {
+    storeCurrent();
+    const d = cur(); if (!d || !window.AgentLink) return;
+    const path = typeof d.handle === 'string' ? d.handle : null, sel = ed.value.slice(ed.selectionStart, ed.selectionEnd);
+    const stem = d.name.replace(/\.[^.]+$/, '');
+    AgentLink.send({title: d.name, files: path ? [path] : [], selection: sel, content: !path || d.dirty ? d.content : '', presets: [
+      {label: t('agent.proofread'), task: t('agent.proofreadTask', {name: stem}), level: 'edit'},
+      {label: t('agent.summary'), task: t('agent.summaryTask'), level: 'read'},
+      {label: t('agent.cards'), task: t('agent.cardsTask', {name: stem}), level: 'edit'},
+      {label: t('agent.explain'), task: t('agent.explainTask'), level: 'read', web: true}]});
+  },
   toggleAutoHide: () => { settings.autoHide = !settings.autoHide; applySettings(); },
   nextIssue: () => nextIssue(),
   newDoc: () => openDoc(null, ''),
@@ -936,7 +949,7 @@ const A = {
 // Menu items: [action, shortcut, checked(), nativeKey]; strings are separators, '#key' is a section label.
 const MENUS = [
   ['file', [['newDoc', 'Alt+N'], ['newFromTemplate', 'Alt+Shift+N'], ['openFile', 'Ctrl+O'], ['openFolder', 'Ctrl+Shift+O'], ['closeFolder'], '-', ['save', 'Ctrl+S'], ['saveAs', 'Ctrl+Shift+S'], ['reloadFile', 'F5'], '-',
-    ['exportDocx', 'Ctrl+Shift+E'], ['exportPdf'], ['exportHtml', 'Ctrl+E'], ['print', 'Ctrl+P'], '-', ['closeTab', 'Alt+W']]],
+    ['exportDocx', 'Ctrl+Shift+E'], ['exportPdf'], ['exportHtml', 'Ctrl+E'], ['print', 'Ctrl+P'], '-', ['sendToAgent', 'Ctrl+Shift+A'], '-', ['closeTab', 'Alt+W']]],
   ['edit', [['undo', 'Ctrl+Z', null, true], ['redo', 'Ctrl+Y', null, true], '-', ['find', 'Ctrl+F'], ['findNext', 'F3'], ['nextIssue', 'F7'], '-',
     ['selectAll', 'Ctrl+A', null, true]]],
   ['insert', [['h1', 'Ctrl+Shift+1'], ['h2', 'Ctrl+Shift+2'], ['h3', 'Ctrl+Shift+3'], ['para', 'Ctrl+Shift+0'], '-',
@@ -1275,7 +1288,7 @@ if (window.Native) {
       const hit = issueAt(e.clientX, e.clientY);
       if (hit) return spellMenu(hit).then(items => [...items, null, ...Native.fieldItems(ed)]);
       return [...Native.fieldItems(ed), null, item('bold'), item('italic'), item('strike'), item('code'), item('link'), null,
-        item('table'), item('codeblock'), item('mathInline'), item('mathBlock'), item('diagram')];
+        item('table'), item('codeblock'), item('mathInline'), item('mathBlock'), item('diagram'), null, item('sendToAgent')];
     }
     const dg = e.target.closest('#paper .diagram');
     if (dg && dg.querySelector('svg')) {
@@ -1329,6 +1342,14 @@ window.__md = {docs: () => docs, cur, openNative, A, ed, runSpell, spellIssues: 
   loadActive();
   if (cur()) ed.setSelectionRange(cur().sel[0], cur().sel[1]);
   if (window.Folder) Folder.restore(saved && saved.folder);
+  // Results of tasks sent to Agent Studio: a Markdown file opens here (or comes to the front when it is open), others
+  // with the program the system uses for them.
+  if (window.AgentLink) AgentLink.init({app: 'Markdown Studio', lang: () => lang, open: async path => {
+    if (!/\.(md|markdown|txt)$/i.test(path)) return false;
+    const i = docs.findIndex(x => x.handle === path);
+    if (i >= 0) { storeCurrent(); active = i; loadActive(); return; }
+    openNative([await invoke('read_file', {path})]);
+  }});
   if (invoke) {
     // Files passed on the command line / via "Open with", and (macOS) files opened while running.
     invoke('initial_files').then(openNative).catch(e => toast(t('toast.openFail', {e})));

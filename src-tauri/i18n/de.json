@@ -351,5 +351,14 @@
   "gr.filterTip": "Klick zeigt nur diesen Ordner",
   "gr.all": "Alle Ordner",
   "gr.orphans": "Notizen ohne Verknüpfung",
-  "toast.folderFail": "Der Ordner ließ sich nicht öffnen: {e}"
+  "toast.folderFail": "Der Ordner ließ sich nicht öffnen: {e}",
+  "a.sendToAgent": "An Agent Studio senden…",
+  "agent.proofread": "Gegenlesen",
+  "agent.proofreadTask": "Lies den Text gegen (oder die Auswahl, wenn eine mitgeschickt wird): Rechtschreibung, Grammatik, Stil und Verständlichkeit. Speichere die verbesserte Fassung als neue Datei „{name} (gegengelesen).md“ daneben und liste die wichtigsten Änderungen auf.",
+  "agent.summary": "Zusammenfassen",
+  "agent.summaryTask": "Fasse den Text (oder die Auswahl) in wenigen Sätzen zusammen, dazu die wichtigsten Punkte als Liste.",
+  "agent.cards": "Lernzettel",
+  "agent.cardsTask": "Mach aus dem Text einen Lernzettel in Markdown (Überschriften, Stichpunkte, 5 Kontrollfragen mit Lösungen) und speichere ihn als neue Datei „{name} – Lernzettel.md“ daneben.",
+  "agent.explain": "Erklären / Fakten prüfen",
+  "agent.explainTask": "Erkläre die Auswahl in einfachen Worten und prüfe, ob die Fakten darin stimmen."
 }
