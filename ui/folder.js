@@ -4,12 +4,14 @@
    - Graph (View → Graph of Notes, Alt+G): the network of the notes — [[links]] and links to other .md files — in a
      force layout; colors are the subfolders, notes that are linked but not created yet are hollow
    - Links tab in the side panel: the current note's neighborhood as a small graph, what links here and where it links to
+   - Folders can be hidden from the graph (right-click → Hide in Graph): their notes stay in the tree, but leave both graphs
    Dragging a note from the sidebar into the editor writes a [[link]] to it. */
 'use strict';
 window.Folder = (() => {
   let root = null, tree = null, treeKey = '', graph = null, filter = '', selected = null, editing = false;
   let expanded = new Set(), byPath = new Map(), recentFolders = [], visible = false, width = 260, graphOpen = false;
   let ctx = null, dragPath = null, localDepth = 1, showMissing = true, groupFilter = null, search = '';
+  let hiddenBy = {};   // root → folders whose notes the graph leaves out
 
   const sepOf = p => p.includes('\\') && !p.includes('/') ? '\\' : '/';
   const under = (p, dir) => typeof p === 'string' && !!dir && (p === dir || p.startsWith(dir + sepOf(dir)));
@@ -19,6 +21,8 @@ window.Folder = (() => {
   const relDir = p => p === root ? baseName(root) : baseName(root) + '/' + p.slice(root.length + 1).replace(/\\/g, '/');
   const docPath = d => d && typeof d.handle === 'string' ? d.handle : null;
   const linksTabOn = () => settings.dock && settings.dockTab === 'links';
+  const hiddenDirs = () => (root && hiddenBy[root]) || [];
+  const isHidden = p => hiddenDirs().some(d => under(p, d));
 
   const SVG = {
     folder: '<svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>',
@@ -27,7 +31,8 @@ window.Folder = (() => {
     newFolder: '<svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M12 10v6M9 13h6"/></svg>',
     graph: '<svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="8" r="2.5"/><circle cx="9" cy="18" r="2.5"/><path d="M8.3 7.1l7.4.6M7 8.3l1.4 7.3M16.6 10.1l-5.9 6"/></svg>',
     collapse: '<svg viewBox="0 0 24 24"><path d="m7 15 5-5 5 5"/><path d="M5 20h14"/></svg>',
-    close: '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>'
+    close: '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>',
+    eyeOff: '<svg viewBox="0 0 24 24"><path d="M3 3l18 18M10.6 6.1A10 10 0 0 1 12 6c5 0 8.5 4.3 9.5 6a15 15 0 0 1-2.8 3.4M6.6 7.6A15 15 0 0 0 2.5 12c1 1.7 4.5 6 9.5 6a9.6 9.6 0 0 0 4.4-1.1M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>'
   };
 
   /* ================= Opening and the tree ================= */
@@ -97,13 +102,16 @@ window.Folder = (() => {
     const dirty = new Set(docs.filter(d => d.dirty).map(docPath).filter(Boolean));
     const keep = e => !q || (e.dir ? e.name.toLowerCase().includes(q) || e.children.some(keep) : stem(e.name).toLowerCase().includes(q));
     const count = e => e.children.reduce((n, c) => n + (c.dir ? count(c) : 1), 0);
+    const hidden = hiddenDirs();
     const row = (e, depth) => {
       if (!keep(e)) return '';
       const pad = `style="padding-left:${6 + depth * 14}px"`, sel = e.path === selected ? ' sel' : '';
       if (e.dir) {
-        const open = !!q || expanded.has(e.path);
-        return `<div class="ft-row ft-dir${sel}" data-path="${esc(e.path)}" data-dir="1" draggable="true" ${pad}>` +
-          `<span class="ft-caret">${open ? '▾' : '▸'}</span>${SVG.folder}<span class="ft-name">${esc(e.name)}</span><small>${count(e) || ''}</small></div>` +
+        const open = !!q || expanded.has(e.path), off = hidden.includes(e.path);
+        return `<div class="ft-row ft-dir${sel}${off ? ' ft-off' : ''}" data-path="${esc(e.path)}" data-dir="1" draggable="true" ${pad}>` +
+          `<span class="ft-caret">${open ? '▾' : '▸'}</span>${SVG.folder}<span class="ft-name">${esc(e.name)}</span>` +
+          (off ? `<button class="ft-unhide" data-unhide="${esc(e.path)}" title="${esc(t('fd.hiddenTip'))}">${SVG.eyeOff}</button>` : '') +
+          `<small>${count(e) || ''}</small></div>` +
           (open ? `<div class="ft-kids" data-in="${esc(e.path)}">${e.children.map(c => row(c, depth + 1)).join('')}</div>` : '');
       }
       return `<div class="ft-row ft-note${sel}${e.path === act ? ' active' : ''}${dirty.has(e.path) ? ' dirty' : ''}" data-path="${esc(e.path)}" draggable="true" ${pad} title="${esc(e.name)}">` +
@@ -134,6 +142,8 @@ window.Folder = (() => {
   $('#filesTree').addEventListener('click', e => {
     const rf = e.target.closest('[data-folder]');
     if (rf) return openPath(rf.dataset.folder);
+    const uh = e.target.closest('[data-unhide]');
+    if (uh) return hideDir(uh.dataset.unhide, false);
     const r = e.target.closest('.ft-row'); if (!r || editing) return;
     selected = r.dataset.path;
     if (r.dataset.dir) { expanded.has(selected) ? expanded.delete(selected) : expanded.add(selected); renderTree(); saveSession(); }
@@ -246,6 +256,7 @@ window.Folder = (() => {
     docs.forEach(d => { if (under(d.handle, from)) { d.handle = map(d.handle); d.name = baseName(d.handle); } });
     recent.forEach(r => { if (under(r.path, from)) { r.path = map(r.path); r.name = baseName(r.path); } });
     expanded = new Set([...expanded].map(p => under(p, from) ? map(p) : p));
+    if (root && hiddenBy[root]) { hiddenBy[root] = hiddenBy[root].map(p => under(p, from) ? map(p) : p); graphSoon(0); }
     if (selected && under(selected, from)) selected = map(selected);
     renderTabs(); updateTitle(); saveSession();
   }
@@ -315,6 +326,9 @@ window.Folder = (() => {
       {id: 'fd:graph', label: t('fd.showGraph')}, null);
     items.push({id: 'fd:newNote', label: t('fd.newNote')}, {id: 'fd:newFolder', label: t('fd.newFolder')});
     if (r) items.push(null, {id: 'fd:rename', label: t('fd.rename'), accel: 'F2'}, {id: 'fd:move', label: t('fd.moveTo')});
+    if (r && ctx.dir) items.push(hiddenDirs().includes(ctx.path) ? {id: 'fd:unhide', label: t('fd.unhide')}
+      : {id: 'fd:hide', label: t('fd.hide'), enabled: !isHidden(ctx.path)});
+    if (hiddenDirs().length) items.push({id: 'fd:unhideAll', label: t('fd.unhideAll', {n: hiddenDirs().length})});
     items.push(null, {id: 'fd:collapse', label: t('fd.collapse')}, {id: 'fd:refresh', label: t('fd.refresh')}, {id: 'fd:close', label: t('fd.close')});
     return items;
   }
@@ -329,10 +343,27 @@ window.Folder = (() => {
       'fd:newFolder': () => newItem(inDir, 'folder'),
       'fd:rename': () => rename(path),
       'fd:move': () => moveDialog(path),
+      'fd:hide': () => hideDir(path, true),
+      'fd:unhide': () => hideDir(path, false),
+      'fd:unhideAll': () => hideDir(null, false),
       'fd:collapse': () => { expanded.clear(); renderTree(); saveSession(); },
       'fd:refresh': () => refresh(true),
       'fd:close': close
     })[id]?.();
+  }
+
+  /* ================= Folders hidden from the graph ================= */
+  /* dir null with on = false shows all folders again. A folder inside a hidden one needs no entry of its own. */
+  function hideDir(dir, on) {
+    if (!root) return;
+    let list = hiddenDirs();
+    if (on) list = [...list.filter(d => !under(d, dir)), dir];
+    else list = dir == null ? [] : list.filter(d => d !== dir);
+    if (list.length) hiddenBy[root] = list; else delete hiddenBy[root];
+    if (on && groupFilter != null && dir === root + sepOf(root) + groupFilter) groupFilter = null;
+    renderTree(); saveSession();
+    bigView.autoFit = true; localView.autoFit = true; drawGraphs();
+    toast(t(on ? 'fd.hidden' : dir == null ? 'fd.unhiddenAll' : 'fd.unhidden', {name: dir == null ? '' : relDir(dir)}));
   }
 
   /* ================= The graph ================= */
@@ -596,8 +627,9 @@ window.Folder = (() => {
   /* Turns (a part of) the Rust graph into what NetView draws; `keep` decides which nodes. */
   function subgraph(keep) {
     const colors = groupColors(), act = docPath(cur()), idx = new Map(), nodes = [];
+    const out = hiddenSet(act);
     graph.nodes.forEach((n, i) => {
-      if (!keep(n, i)) return;
+      if (out.has(i) || !keep(n, i)) return;
       idx.set(i, nodes.length);
       nodes.push({key: keyOf(n), name: n.missing ? n.name : n.name, path: n.path, folder: n.folder, missing: n.missing,
         group: groupOf(n), color: colors.get(groupOf(n)) || colors.get(''), current: !!act && n.path === act});
@@ -605,18 +637,30 @@ window.Folder = (() => {
     const links = graph.links.filter(([a, b]) => idx.has(a) && idx.has(b)).map(([a, b]) => [idx.get(a), idx.get(b)]);
     return {nodes, links, colors};
   }
+  /* The nodes left out because of hidden folders (the current note always stays): notes in them, and notes not created
+     yet that only they link to. */
+  function hiddenSet(act) {
+    const out = new Set();
+    if (!hiddenDirs().length) return out;
+    graph.nodes.forEach((n, i) => { if (!n.missing && n.path !== act && isHidden(n.path)) out.add(i); });
+    const linked = new Set(graph.links.filter(([a]) => !out.has(a)).map(([, b]) => b));
+    graph.nodes.forEach((n, i) => { if (n.missing && !linked.has(i)) out.add(i); });
+    return out;
+  }
   function drawBig() {
     if (!graph) { $('#graphStats').textContent = ''; return; }
     const {nodes, links, colors} = subgraph(n => (showMissing || !n.missing) && (groupFilter == null || (!n.missing && groupOf(n) === groupFilter)));
     bigView.mark = search.trim().toLowerCase();
     bigView.setData(nodes, links);
     $('#graphStats').textContent = t('gr.stats', {n: num(nodes.filter(n => !n.missing).length), l: num(links.length)});
-    const counts = new Map();
-    graph.nodes.forEach(n => { if (!n.missing) counts.set(groupOf(n), (counts.get(groupOf(n)) || 0) + 1); });
+    const counts = new Map(), out = hiddenSet(docPath(cur()));
+    graph.nodes.forEach((n, i) => { if (!n.missing && !out.has(i)) counts.set(groupOf(n), (counts.get(groupOf(n)) || 0) + 1); });
     $('#graphLegend').innerHTML = [...colors].filter(([g]) => counts.has(g)).map(([g, c]) =>
       `<button class="gl-item${groupFilter === g ? ' active' : ''}${groupFilter != null && groupFilter !== g ? ' off' : ''}" data-group="${esc(g)}" title="${esc(t('gr.filterTip'))}">` +
       `<i style="background:${c}"></i>${esc(g || t('gr.top'))}<small>${counts.get(g)}</small></button>`).join('') +
-      (groupFilter != null ? `<button class="gl-item" data-group-all="1">${esc(t('gr.all'))}</button>` : '');
+      (groupFilter != null ? `<button class="gl-item" data-group-all="1">${esc(t('gr.all'))}</button>` : '') +
+      hiddenDirs().map(d => `<button class="gl-item gl-hidden" data-unhide="${esc(d)}" title="${esc(t('gr.unhideTip'))}">` +
+        `${SVG.eyeOff}${esc(relDir(d))}</button>`).join('');
   }
   function showGraph(on = !graphOpen) {
     if (on && !root) { toast(t('fd.needFolder')); return pick(); }
@@ -631,6 +675,8 @@ window.Folder = (() => {
     } else ed.focus({preventScroll: true});
   }
   $('#graphLegend').addEventListener('click', e => {
+    const uh = e.target.closest('[data-unhide]');
+    if (uh) return hideDir(uh.dataset.unhide, false);
     const b = e.target.closest('[data-group],[data-group-all]'); if (!b) return;
     groupFilter = b.dataset.groupAll || groupFilter === b.dataset.group ? null : b.dataset.group;
     bigView.autoFit = true; drawBig();
@@ -706,10 +752,10 @@ window.Folder = (() => {
   const typed = () => { if (root && (graphOpen || linksTabOn()) && under(docPath(cur()), root)) graphSoon(1500); };
   const saved = () => { if (root) refresh(true); };
   let pending = null;   // the saved folder while it is being opened again
-  const state = () => ({root: root || pending, expanded: [...expanded], recent: recentFolders, visible, width, depth: localDepth});
+  const state = () => ({root: root || pending, expanded: [...expanded], recent: recentFolders, visible, width, depth: localDepth, hidden: hiddenBy});
   function restore(s) {
     if (!s || !invoke) return layout();
-    recentFolders = s.recent || []; width = s.width || width; localDepth = s.depth || 1;
+    recentFolders = s.recent || []; width = s.width || width; localDepth = s.depth || 1; hiddenBy = s.hidden || {};
     visible = !!s.visible;
     layout();
     if (s.root) {
@@ -730,5 +776,5 @@ window.Folder = (() => {
 
   return {pick, close, toggle, showGraph, menu, action, onActive, onDirty, typed, saved, state, restore, renderLinks, language,
     get root() { return root; }, get visible() { return visible && !!invoke; }, get graphOpen() { return graphOpen; }, under,
-    graphData: () => graph, views: {bigView, localView}};
+    graphData: () => graph, views: {bigView, localView}, hideDir, get hidden() { return hiddenDirs(); }};
 })();

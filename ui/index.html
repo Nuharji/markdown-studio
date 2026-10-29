@@ -335,6 +335,12 @@ body.ah .main.has-files{grid-template-columns:auto 1fr auto}
 .ft-name{flex:1;overflow:hidden;text-overflow:ellipsis}
 .ft-row small{color:var(--dim);font-size:10px}
 .ft-row.dirty .ft-name::after{content:" ●";color:var(--accent)}
+.ft-row.ft-off>.ft-name,.ft-row.ft-off>svg{opacity:.5}
+.ft-row.ft-off+.ft-kids{opacity:.55}
+.ft-unhide{display:flex;background:none;border:0;padding:0 2px;color:var(--dim);cursor:pointer}
+.ft-unhide:hover{color:var(--accent)}
+.ft-unhide svg,.gl-hidden svg{width:13px;height:13px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.gl-item.gl-hidden{color:var(--dim);border-style:dashed;border-color:var(--border)}
 .ft-input{flex:1;min-width:0;height:20px;background:var(--input-bg);color:var(--text);border:1px solid var(--accent);border-radius:3px;padding:0 4px;font:inherit;outline:0}
 .ft-recent{display:flex;align-items:center;gap:8px;width:100%;background:none;border:0;border-radius:var(--radius);padding:6px 8px;text-align:left;color:var(--text)}
 .ft-recent:hover{background:var(--hover)}

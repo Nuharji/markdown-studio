@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.13.0 — 2026-10-29
+- New: Hide folders in the graph. Right-click a folder in the sidebar → Hide in Graph: its notes (and subfolders) leave the graph of notes and the Links tab's small graph, along with notes not created yet that only they link to. They stay in the sidebar, dimmed with a crossed-out eye; click the eye, the folder's chip in the graph legend, or right-click → Show in Graph Again to bring them back (“Show All Hidden Folders” at once). Hidden folders are kept per folder you open, also across restarts, and follow when a folder is renamed or moved. The note you have open is always shown.
+
 ## 1.12.0 — 2026-10-24
 - New: Send to Agent Studio (File menu, Ctrl+Shift+A, or right-click in the editor): the note or the selection with a task
   for Claude — Proofread (as a new file "… (proofread).md"), Summarize, Study sheet, Explain / check facts, or your own
