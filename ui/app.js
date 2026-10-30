@@ -1078,7 +1078,7 @@ function renderSettings() {
       <h3>${t('set.layout')}</h3>${sw('dock', t('set.panels'))}${sw('autoHide', t('set.autoHide'))}`,
     appearance: `<h3>${t('set.theme')}</h3><div class="theme-grid">` + THEMES.map(th =>
         `<button class="theme-card${settings.theme === th ? ' active' : ''}" data-theme-pick="${th}">${mock(th)}
-         <div class="theme-name">${esc(t('theme.' + th))}<span>${settings.theme === th ? '&#10003;' : ''}</span></div></button>`).join('') + `</div>
+         <div class="theme-name">${esc(t('theme.' + th))}<span>${settings.theme === th ? '&#10003;' : ''}</span></div></button>`).join('') + `</div>` + (window.Shared ? Shared.layoutHeading() : '') + `
       <h3>${t('set.paper')}</h3><p class="hint">${t('set.paperHint')}</p>
       ${seg('paper', [['auto', t('set.paperAuto')], ['light', t('set.light')], ['dark', t('set.dark')]], settings.paper)}`,
     editor: `${range('edFont', t('set.edFont'), 11, 22, 1, ' px')}<h3>${t('set.behavior')}</h3>${sw('wrap', t('set.wrap'))}${sw('sync', t('set.sync'))}

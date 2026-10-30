@@ -1,4 +1,4 @@
-//! Settings shared by all Studio apps (the same file in every app): theme, language, the work folder and the sync
+//! Settings shared by all Studio apps (the same file in every app): theme, layout, language, the work folder and the sync
 //! folder, kept in
 //! <config dir>/Studio/shared.json (Windows: %APPDATA%\Studio, macOS: ~/Library/Application Support/Studio,
 //! Linux: ~/.config/Studio). Studio Hub edits them; each app reads them at start and when its window gets the focus
@@ -12,6 +12,23 @@ use tauri::{AppHandle, Manager};
 
 const THEMES: [&str; 4] = ["dark", "light", "github", "github-dark"];
 const LANGS: [&str; 3] = ["auto", "en", "de"];
+const LAYOUTS: [&str; 3] = ["adobe", "custom", "modern"];
+
+/// The options of the layout "custom": only known options with valid values.
+fn custom_layout_ok(o: &Map<String, Value>) -> bool {
+    o.iter().all(|(k, v)| {
+        let allowed: &[&str] = match k.as_str() {
+            "dock" => &["right", "left"],
+            "tools" => &["left", "right"],
+            "density" => &["compact", "normal", "comfortable"],
+            "corners" => &["theme", "sharp", "medium", "round"],
+            "float" => &["off", "on"],
+            "status" => &["on", "off"],
+            _ => &[],
+        };
+        v.as_str().is_some_and(|s| allowed.contains(&s))
+    })
+}
 
 fn file(app: &AppHandle) -> Option<PathBuf> {
     // Debug builds only: test copies can use their own folder (STUDIO_SHARED_DIR), so they never change the real
@@ -32,6 +49,8 @@ pub fn merge(mut cur: Map<String, Value>, patch: &Map<String, Value>) -> Map<Str
             (_, Value::Null) => { cur.remove(k); continue; }
             ("theme", Value::String(s)) => THEMES.contains(&s.as_str()),
             ("lang", Value::String(s)) => LANGS.contains(&s.as_str()),
+            ("layout", Value::String(s)) => LAYOUTS.contains(&s.as_str()),
+            ("layoutCustom", Value::Object(o)) => custom_layout_ok(o),
             ("workFolder", Value::String(s)) | ("syncFolder", Value::String(s)) => !s.is_empty(),
             _ => false,
         };
@@ -93,6 +112,12 @@ mod tests {
         let m = merge(m, json!({"syncFolder": null}).as_object().unwrap());
         let m = merge(m, json!({"theme": "neon", "lang": null}).as_object().unwrap());
         assert_eq!(Value::Object(m.clone()), json!({"theme": "light", "workFolder": "/tmp"}), "bad values are ignored, null removes");
+        let m2 = merge(Map::new(), json!({"layout": "custom", "layoutCustom": {"dock": "left", "float": "on"}}).as_object().unwrap());
+        assert_eq!(Value::Object(m2.clone()), json!({"layout": "custom", "layoutCustom": {"dock": "left", "float": "on"}}));
+        let m2 = merge(m2, json!({"layout": "neon", "layoutCustom": {"dock": "top"}}).as_object().unwrap());
+        assert_eq!(m2["layout"], "custom", "unknown layouts are ignored");
+        assert_eq!(m2["layoutCustom"]["dock"], "left", "bad options are ignored");
+        assert_eq!(merge(Map::new(), json!({"layoutCustom": {"evil": "left"}}).as_object().unwrap()).len(), 0);
         let dir = std::env::temp_dir().join(format!("studio-shared-test-{}", std::process::id()));
         let path = dir.join("Studio").join("shared.json");
         write_to(&path, &m).unwrap();

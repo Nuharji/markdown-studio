@@ -1,0 +1,71 @@
+/* Layouts of the Studio apps (the same file in every app; shared.js sets the attributes). Layouts arrange the window,
+   themes color it, so any layout goes with any theme. Without attributes (Adobe, the default) nothing here applies. */
+@media screen{
+html{--l-menu:32px;--l-opt:40px;--l-status:24px}
+html[data-l-density="compact"]{--l-menu:28px;--l-opt:34px;--l-status:20px}
+html[data-l-density="comfortable"]{--l-menu:36px;--l-opt:46px;--l-status:26px}
+html[data-l-status="off"]{--l-status:0px}
+html[data-l-status="off"] footer.status{display:none}
+html[data-layout]:not([data-layout="adobe"]) body:not(.ah):not(.full):not(.mini):has(>.main){grid-template-rows:var(--l-menu) var(--l-opt) 1fr var(--l-status)}
+html[data-layout]:not([data-layout="adobe"]) .menu>button,html[data-layout]:not([data-layout="adobe"]) .logo{height:var(--l-menu)}
+html[data-layout]:not([data-layout="adobe"]) .dropdown{top:var(--l-menu)}
+html[data-l-density="comfortable"] body{font-size:13px}
+
+/* Corners: replace the ones the theme brings */
+html[data-l-corners="sharp"]{--radius:2px;--btn-radius:2px;--cta-radius:2px}
+html[data-l-corners="medium"]{--radius:5px;--btn-radius:8px;--cta-radius:8px}
+html[data-l-corners="round"]{--radius:8px;--btn-radius:14px;--cta-radius:14px}
+
+/* Rail and panels on either side: flex, because a hidden panel must not shift the others */
+html[data-l-flex] .main{display:flex}
+html[data-l-flex] .main>.tools{flex:none;width:44px;order:0}
+html[data-l-flex] .main>.files{flex:none;order:2}
+html[data-l-flex] .main>.center{flex:1 1 0;order:5}
+html[data-l-flex] .main>.dock{flex:none;order:8}
+html[data-l-dock="left"] .main>.dock{order:1;border-left:0;border-right:1px solid var(--line)}
+html[data-l-tools="right"] .main>.tools{order:9;border-right:0;border-left:1px solid var(--line)}
+
+/* Floating panels: rail, content and panels as separate rounded cards */
+html[data-l-float="on"] body:not(.full):not(.mini) .main{gap:8px;padding:8px;background:var(--bg)}
+html[data-l-float="on"] .menubar,html[data-l-float="on"] .optbar,html[data-l-float="on"] footer.status{border-color:transparent}
+html[data-l-float="on"] body:not(.full):not(.mini) .main>.center,html[data-l-float="on"] .main>.dock,html[data-l-float="on"] .main>.files,
+html[data-l-float="on"] body:not(.ah) .main>.tools{border:1px solid var(--line);border-radius:12px;overflow:clip}
+
+/* Studio Hub has no bars, only cards */
+html[data-l-density="compact"] body:has(>main) .card{padding:10px 12px;gap:12px}
+html[data-l-density="compact"] body:has(>main) .grid{gap:8px;margin-bottom:16px}
+html[data-l-density="compact"] body:has(>main) .tile{width:48px;height:48px;font-size:19px}
+html[data-l-density="compact"] body:has(>main) header{padding:8px 16px}
+html[data-l-density="comfortable"] body:has(>main) .card{padding:20px 20px 20px 22px}
+html[data-l-density="comfortable"] body:has(>main) .grid{gap:18px}
+html[data-l-corners="sharp"] body:has(>main) .card{border-radius:3px}
+html[data-l-corners="medium"] body:has(>main) .card{border-radius:8px}
+html[data-l-corners="round"] body:has(>main) .card{border-radius:18px}
+html[data-l-float="on"] body:has(>main) .card{box-shadow:var(--shadow)}
+}
+
+/* The picker in the settings */
+.lo-picker{max-width:560px;margin:8px 0}
+.lo-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.lo-card{padding:0;border:2px solid var(--border);border-radius:8px;overflow:hidden;background:none;text-align:left;cursor:pointer;color:inherit;font:inherit}
+.lo-card:hover{border-color:var(--dim)}
+.lo-card.active{border-color:var(--accent)}
+.lo-name{display:flex;justify-content:space-between;padding:6px 9px;font-weight:600;color:var(--strong)}
+.lo-mock{height:66px;display:flex;flex-direction:column;background:var(--bg);pointer-events:none}
+.lo-mock>b{flex:none;height:7px;background:var(--hover);border-bottom:1px solid var(--border)}
+.lo-mock>u{flex:none;height:4px;background:var(--hover)}
+.lo-row{flex:1;display:flex;min-height:0}
+.lo-row i{display:block;background:var(--hover);border:0 solid var(--border)}
+.lo-row .r{width:9px;order:0;border-right-width:1px}.lo-row .d{width:24%;order:8;border-left-width:1px}
+.lo-row .c{flex:1;order:5;background:none}
+.lo-mock.tr .r{order:9;border-right-width:0;border-left-width:1px}
+.lo-mock.dl .d{order:1;border-left-width:0;border-right-width:1px}
+.lo-mock.fl .lo-row{gap:3px;padding:3px}
+.lo-mock.fl .lo-row i{border:1px solid var(--border);border-radius:3px}
+.lo-mock.fl .c{background:var(--hover)}
+.lo-opts{margin-top:12px;display:grid;grid-template-columns:auto 1fr;gap:6px 14px;align-items:center}
+.lo-seg{display:inline-flex;justify-self:start;border:1px solid var(--border);border-radius:5px;overflow:hidden}
+.lo-seg button{background:none;border:0;border-right:1px solid var(--border);padding:4px 10px;color:inherit;font:inherit;cursor:pointer}
+.lo-seg button:last-child{border-right:0}
+.lo-seg button:hover{background:var(--hover)}
+.lo-seg button.active{background:var(--accent);color:#fff}
