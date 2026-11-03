@@ -351,7 +351,6 @@ pub fn sketch_svg(code: &str) -> Result<String, String> {
 #[tauri::command]
 pub async fn md_sources(text: String) -> Vec<Source> { sources(&text) }
 
-#[cfg(test)]
 pub fn render(src: &str, inline: bool) -> Rendered { render_lang(src, inline, "en") }
 
 pub fn render_lang(src: &str, inline: bool, lang: &str) -> Rendered {

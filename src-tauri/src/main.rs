@@ -2,6 +2,8 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod agentlink;
+mod mcp;
+mod mcp_tools;
 mod shared;
 mod docx;
 mod edit;
@@ -401,6 +403,7 @@ fn clipboard_write(app: AppHandle, text: String) -> Result<(), String> {
     app.clipboard().write_text(text).map_err(|e| e.to_string())
 }
 fn main() {
+    if mcp::wanted() { return mcp_tools::run(); }
     let args: Vec<PathBuf> = std::env::args_os()
         .skip(1)
         .map(PathBuf::from)

@@ -13,6 +13,36 @@ flatpak/            Flatpak manifest (repackages the Linux .deb)
 app-icon.png        Source icon (platform icons are generated from it)
 ```
 
+## MCP
+Markdown Studio is also an MCP server, so Claude (Desktop or Code), ChatGPT and other MCP clients can use what it can do:
+started with `--mcp`, the program opens no window and speaks MCP on stdin / stdout until the client closes it.
+
+- `list_notes` — Lists the Markdown notes in a folder and its subfolders.
+- `read_note` — Reads a Markdown note: its text and number of words.
+- `write_note` — Writes a Markdown note. Replaces an existing note only with overwrite.
+- `search_notes` — Finds a text in the notes of a folder (not case-sensitive): file, line and the line's text.
+- `note_graph` — The network of the notes in a folder: notes, and which link to which with [[…]].
+- `render_html` — Renders Markdown text to HTML the way the preview does.
+
+Only Markdown files are written, an existing note only with `overwrite`. Files are given as full paths.
+
+Claude Code: `claude mcp add markdown-studio -- "/Applications/Markdown Studio.app/Contents/MacOS/markdown-studio" --mcp`.
+Claude Desktop (`claude_desktop_config.json`):
+```json
+{
+  "mcpServers": {
+    "markdown-studio": {
+      "command": "/Applications/Markdown Studio.app/Contents/MacOS/markdown-studio",
+      "args": [
+        "--mcp"
+      ]
+    }
+  }
+}
+```
+The program is `/Applications/Markdown Studio.app/Contents/MacOS/markdown-studio` on macOS, `markdown-studio.exe` in the install folder on
+Windows, and `markdown-studio` (or the AppImage) on Linux.
+
 ## Build outputs
 
 | Platform | Architectures | Packages |

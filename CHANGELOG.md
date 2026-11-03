@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.15.0 — 2026-11-03
+- New: MCP server. Started with `--mcp`, Markdown Studio opens no window and lets Claude, ChatGPT and other MCP clients use it: `list_notes`, `read_note`, `write_note`, `search_notes`, `note_graph`, `render_html`. Only Markdown files are written, an existing note only with `overwrite`. Setup: see README → MCP.
+
 ## 1.14.0 — 2026-10-30
 - New: Layouts, next to the themes (Settings → Appearance; shared by all Studio apps, any layout goes with any theme). **Adobe** is the look so far; **Modern** has rounded, floating panels and more room; **Custom** is yours: panels and tool rail left or right, density, corners, floating panels, status bar.
 
