@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.15.1 — 2026-11-03
+- Fix (macOS): the app no longer asks again and again for access to your Documents folder (or Desktop, Downloads). The app is now signed as a whole, so macOS can remember your answer. After an update, macOS may ask once more.
+
 ## 1.15.0 — 2026-11-03
 - New: MCP server. Started with `--mcp`, Markdown Studio opens no window and lets Claude, ChatGPT and other MCP clients use it: `list_notes`, `read_note`, `write_note`, `search_notes`, `note_graph`, `render_html`. Only Markdown files are written, an existing note only with `overwrite`. Setup: see README → MCP.
 
