@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.17.0 — 2026-11-05
+- New: CLI theme and CLI layout. Theme "CLI (Terminal)": black, phosphor green, monospace, square corners. Layout "CLI": monospace font, compact, square and flat (no shadows) — goes with every theme. Choose them in Settings → Appearance (the theme also in the Settings menu). The layout "Custom" also gets the new option Font → Monospace.
+
 ## 1.16.0 — 2026-11-05
 - New: own theme and layout for this app. Settings → Appearance → "Only for this app": the theme and layout you choose here stay with Markdown Studio; "Like Studio Hub" (default) keeps it looking like all Studio apps. Also settable in Studio Hub 1.13 → Theme per app.
 

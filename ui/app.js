@@ -92,7 +92,7 @@ function renderInto(root, r) {
 }
 
 /* ================= Documents & session ================= */
-const THEMES = ['dark', 'light', 'github', 'github-dark'];
+const THEMES = ['dark', 'light', 'github', 'github-dark', 'cli'];
 const DEF = {keys: {}, autoHide: false, lang: 'auto', theme: 'dark', view: 'split', split: 50, zoom: 100, sync: true, wrap: true, paper: 'auto', font: 'sans',
   pagew: 860, edFont: 14, dock: true, dockTab: 'outline', spell: 'auto'};
 let settings = {...DEF}, docs = [], active = 0, untitledN = 1, saveT, rT, booted = false;
@@ -138,7 +138,7 @@ $('#recent').addEventListener('click', async e => {
 
 /* Actions that make sense with no document open; everything else is disabled on the start screen. */
 const NO_DOC = new Set(['toggleAutoHide', 'newDoc', 'newFromTemplate', 'openFile', 'openFolder', 'closeFolder', 'toggleFiles', 'graph', 'settings', 'langAuto', 'langEn', 'langDe', 'themeDark', 'themeLight', 'themeGithub',
-  'themeGithubDark', 'openGuide', 'refMd', 'refLatex', 'shortcuts', 'about', 'togglePanels', 'toggleSync', 'toggleWrap', 'togglePaper',
+  'themeGithubDark', 'themeCli', 'openGuide', 'refMd', 'refLatex', 'shortcuts', 'about', 'togglePanels', 'toggleSync', 'toggleWrap', 'togglePaper',
   'zoomIn', 'zoomOut', 'zoomReset', 'viewEdit', 'viewSplit', 'viewPreview']);
 const FOLDER_ACTS = new Set(['openFolder', 'closeFolder', 'toggleFiles', 'graph']);
 const allowed = act => (FOLDER_ACTS.has(act) ? !!invoke && (act !== 'closeFolder' || !!(window.Folder && Folder.root)) : true) && (!!cur() || NO_DOC.has(act));
@@ -917,7 +917,7 @@ const A = {
   settings: () => openSettings(),
   langAuto: () => setLang('auto'), langEn: () => setLang('en'), langDe: () => setLang('de'),
   themeDark: () => setTheme('dark'), themeLight: () => setTheme('light'),
-  themeGithub: () => setTheme('github'), themeGithubDark: () => setTheme('github-dark'),
+  themeGithub: () => setTheme('github'), themeGithubDark: () => setTheme('github-dark'), themeCli: () => setTheme('cli'),
   openGuide: () => {
     const name = t('doc.guideFile'), i = docs.findIndex(d => d.name === name && !d.dirty);
     if (i >= 0) activate(i); else openDoc(name, buildGuide());
@@ -966,7 +966,7 @@ const MENUS = [
     ['langAuto', null, () => settings.lang === 'auto'], ['langEn', null, () => settings.lang === 'en'], ['langDe', null, () => settings.lang === 'de'],
     '-', '#menu.theme',
     ['themeDark', null, () => settings.theme === 'dark'], ['themeLight', null, () => settings.theme === 'light'],
-    ['themeGithub', null, () => settings.theme === 'github'], ['themeGithubDark', null, () => settings.theme === 'github-dark']]],
+    ['themeGithub', null, () => settings.theme === 'github'], ['themeGithubDark', null, () => settings.theme === 'github-dark'], ['themeCli', null, () => settings.theme === 'cli']]],
   ['help', [['openGuide', 'F1'], ['refMd'], ['refLatex'], ['shortcuts'], '-', ['about']]]
 ];
 const KEYMAP = {};

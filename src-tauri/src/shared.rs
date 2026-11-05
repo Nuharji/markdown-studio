@@ -12,9 +12,9 @@ use serde_json::{Map, Value};
 use std::path::{Path, PathBuf};
 use tauri::{AppHandle, Manager};
 
-const THEMES: [&str; 4] = ["dark", "light", "github", "github-dark"];
+const THEMES: [&str; 5] = ["dark", "light", "github", "github-dark", "cli"];
 const LANGS: [&str; 3] = ["auto", "en", "de"];
-const LAYOUTS: [&str; 3] = ["adobe", "custom", "modern"];
+const LAYOUTS: [&str; 4] = ["adobe", "custom", "modern", "cli"];
 
 /// The options of the layout "custom": only known options with valid values.
 fn custom_layout_ok(o: &Map<String, Value>) -> bool {
@@ -26,6 +26,7 @@ fn custom_layout_ok(o: &Map<String, Value>) -> bool {
             "corners" => &["theme", "sharp", "medium", "round"],
             "float" => &["off", "on"],
             "status" => &["on", "off"],
+            "font" => &["theme", "mono"],
             _ => &[],
         };
         v.as_str().is_some_and(|s| allowed.contains(&s))
@@ -153,6 +154,12 @@ mod tests {
         assert_eq!(m2["layout"], "custom", "unknown layouts are ignored");
         assert_eq!(m2["layoutCustom"]["dock"], "left", "bad options are ignored");
         assert_eq!(merge(Map::new(), json!({"layoutCustom": {"evil": "left"}}).as_object().unwrap()).len(), 0);
+        // CLI: theme, layout and the monospace font option
+        let c = merge(Map::new(), json!({"theme": "cli", "layout": "cli", "apps": {"md": {"theme": "cli", "layout": "cli"}}}).as_object().unwrap());
+        assert_eq!(Value::Object(c), json!({"theme": "cli", "layout": "cli", "apps": {"md": {"theme": "cli", "layout": "cli"}}}));
+        let c = merge(Map::new(), json!({"layoutCustom": {"font": "mono", "dock": "left"}}).as_object().unwrap());
+        assert_eq!(c["layoutCustom"], json!({"font": "mono", "dock": "left"}));
+        assert_eq!(merge(Map::new(), json!({"layoutCustom": {"font": "comic"}}).as_object().unwrap()).len(), 0);
         // Own looks per app
         let a = merge(m.clone(), json!({"apps": {"md": {"theme": "light", "layout": "modern", "evil": 1}, "pd": {"theme": "neon"}, "BAD!": {"theme": "light"}}}).as_object().unwrap());
         assert_eq!(a["apps"], json!({"md": {"theme": "light", "layout": "modern"}}), "bad entries, keys and ids are ignored");

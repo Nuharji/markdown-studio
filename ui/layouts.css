@@ -16,6 +16,12 @@ html[data-l-corners="sharp"]{--radius:2px;--btn-radius:2px;--cta-radius:2px}
 html[data-l-corners="medium"]{--radius:5px;--btn-radius:8px;--cta-radius:8px}
 html[data-l-corners="round"]{--radius:8px;--btn-radius:14px;--cta-radius:14px}
 
+/* Monospace font (CLI and Eigenes): replaces the one the theme brings */
+html[data-l-font="mono"]{--font-ui:ui-monospace,"SF Mono","Cascadia Mono",Menlo,Consolas,"DejaVu Sans Mono",monospace}
+/* CLI: flat like a terminal — no shadows, no rounded switches or pills */
+html[data-layout="cli"]{--shadow:none;--paper-shadow:none;--cta-radius:0px;--btn-radius:0px;--radius:0px}
+html[data-layout="cli"] .dropdown,html[data-layout="cli"] .modal{box-shadow:none;border:1px solid var(--accent)}
+
 /* Rail and panels on either side: flex, because a hidden panel must not shift the others */
 html[data-l-flex] .main{display:flex}
 html[data-l-flex] .main>.tools{flex:none;width:44px;order:0}
@@ -46,7 +52,7 @@ html[data-l-float="on"] body:has(>main) .card{box-shadow:var(--shadow)}
 
 /* The picker in the settings */
 .lo-picker{max-width:560px;margin:8px 0}
-.lo-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.lo-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
 .lo-card{padding:0;border:2px solid var(--border);border-radius:8px;overflow:hidden;background:none;text-align:left;cursor:pointer;color:inherit;font:inherit}
 .lo-card:hover{border-color:var(--dim)}
 .lo-card.active{border-color:var(--accent)}
@@ -69,3 +75,4 @@ html[data-l-float="on"] body:has(>main) .card{box-shadow:var(--shadow)}
 .lo-seg button:last-child{border-right:0}
 .lo-seg button:hover{background:var(--hover)}
 .lo-seg button.active{background:var(--accent);color:#fff}
+.lo-mock.mo .c{font:700 11px/1 ui-monospace,Menlo,Consolas,monospace;color:var(--accent);padding:5px 6px}
