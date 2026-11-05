@@ -22,6 +22,14 @@ html[data-l-font="mono"]{--font-ui:ui-monospace,"SF Mono","Cascadia Mono",Menlo,
 html[data-layout="cli"]{--shadow:none;--paper-shadow:none;--cta-radius:0px;--btn-radius:0px;--radius:0px}
 html[data-layout="cli"] .dropdown,html[data-layout="cli"] .modal{box-shadow:none;border:1px solid var(--accent)}
 
+/* Fokus: calm — bars and panels without lines, the tool rail fades until you point at it */
+html[data-layout="focus"] .menubar,html[data-layout="focus"] .optbar{border-color:transparent}
+html[data-layout="focus"] .main>.tools,html[data-layout="focus"] .main>.dock,html[data-layout="focus"] .main>.files{border-color:transparent}
+html[data-layout="focus"] .main>.tools{opacity:.5;transition:opacity .15s}
+html[data-layout="focus"] .main>.tools:hover,html[data-layout="focus"] .main>.tools:focus-within{opacity:1}
+html[data-layout="focus"] body:has(>main) .card{border-color:transparent;box-shadow:var(--shadow)}
+html[data-layout="focus"] body:has(>main) header{border-color:transparent}
+
 /* Rail and panels on either side: flex, because a hidden panel must not shift the others */
 html[data-l-flex] .main{display:flex}
 html[data-l-flex] .main>.tools{flex:none;width:44px;order:0}
@@ -52,7 +60,7 @@ html[data-l-float="on"] body:has(>main) .card{box-shadow:var(--shadow)}
 
 /* The picker in the settings */
 .lo-picker{max-width:560px;margin:8px 0}
-.lo-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.lo-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .lo-card{padding:0;border:2px solid var(--border);border-radius:8px;overflow:hidden;background:none;text-align:left;cursor:pointer;color:inherit;font:inherit}
 .lo-card:hover{border-color:var(--dim)}
 .lo-card.active{border-color:var(--accent)}
@@ -76,3 +84,5 @@ html[data-l-float="on"] body:has(>main) .card{box-shadow:var(--shadow)}
 .lo-seg button:hover{background:var(--hover)}
 .lo-seg button.active{background:var(--accent);color:#fff}
 .lo-mock.mo .c{font:700 11px/1 ui-monospace,Menlo,Consolas,monospace;color:var(--accent);padding:5px 6px}
+.lo-mock.fo>b,.lo-mock.fo .lo-row i{border-color:transparent}
+.lo-mock.fo .r{opacity:.45}

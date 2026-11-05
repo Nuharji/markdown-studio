@@ -2,7 +2,7 @@
    folder in <config dir>/Studio/shared.json. Studio Hub edits them; every app takes them over at start and whenever
    its window gets the focus, and passes its own theme / language changes on — so all apps look and speak alike.
    Shared.init({apply(s)}) → applies the shared values (s.theme, s.lang); Shared.push({theme, lang}) after a change.
-   The layout (Adobe, Eigenes, Modern, CLI; layouts.css) is shared as well, but this file applies it itself:
+   The layout (Adobe, Eigenes, Modern, CLI, Fokus, Gespiegelt; layouts.css) is shared as well, but this file applies it itself:
    Shared.layoutPicker() gives the settings section, Shared.setLayout(name) changes it.
    Own look per app: Shared.init({app: 'md', apply}) names the app. When shared.json has an entry apps.<app> (theme, layout,
    layoutCustom), the app uses it instead of the shared values (missing keys still follow the hub) and keeps its own theme /
@@ -28,14 +28,18 @@
   const LAYOUTS = {adobe: BASE, custom: {...BASE, dock: 'left', density: 'compact', corners: 'medium'},
     modern: {...BASE, density: 'comfortable', corners: 'round', float: 'on'},
     // CLI: like a terminal — monospace font, square, compact and flat (layouts.css), with any theme (best with the CLI theme).
-    cli: {...BASE, density: 'compact', corners: 'sharp', font: 'mono'}};
+    cli: {...BASE, density: 'compact', corners: 'sharp', font: 'mono'},
+    // Fokus: calm — roomy, no status bar, bars and panels without lines, the tool rail fades until you point at it.
+    focus: {...BASE, density: 'comfortable', corners: 'medium', status: 'off'},
+    // Gespiegelt: Adobe mirrored — panels on the left, tool rail on the right.
+    mirror: {...BASE, dock: 'left', tools: 'right'}};
   const LABELS = {
-    en: {heading: 'Layout', hint: 'How the window is arranged. Works with every theme and applies to all Studio apps.', adobe: 'Adobe', custom: 'Custom', modern: 'Modern', cli: 'CLI',
+    en: {heading: 'Layout', hint: 'How the window is arranged. Works with every theme and applies to all Studio apps.', adobe: 'Adobe', custom: 'Custom', modern: 'Modern', cli: 'CLI', focus: 'Focus', mirror: 'Mirrored',
       dock: 'Panels', tools: 'Tool rail', density: 'Density', corners: 'Corners', float: 'Floating panels', status: 'Status bar', font: 'Font', mono: 'Monospace',
       scope: 'Theme and layout', follow: 'Like Studio Hub', own: 'Only for this app',
       scopeHint: 'Like Studio Hub: this app looks like all the others and follows changes in the hub. Only for this app: theme and layout chosen here stay with this app.',
       right: 'Right', left: 'Left', compact: 'Compact', normal: 'Normal', comfortable: 'Roomy', theme: 'Like the theme', sharp: 'Sharp', medium: 'Medium', round: 'Round', on: 'On', off: 'Off'},
-    de: {heading: 'Layout', hint: 'Wie das Fenster aufgebaut ist. Passt zu jedem Design und gilt für alle Studio-Apps.', adobe: 'Adobe', custom: 'Eigenes', modern: 'Modern', cli: 'CLI',
+    de: {heading: 'Layout', hint: 'Wie das Fenster aufgebaut ist. Passt zu jedem Design und gilt für alle Studio-Apps.', adobe: 'Adobe', custom: 'Eigenes', modern: 'Modern', cli: 'CLI', focus: 'Fokus', mirror: 'Gespiegelt',
       dock: 'Seitenleiste', tools: 'Werkzeugleiste', density: 'Dichte', corners: 'Ecken', float: 'Schwebende Flächen', status: 'Statusleiste', font: 'Schrift', mono: 'Monospace',
       scope: 'Design und Layout', follow: 'Wie im Studio Hub', own: 'Nur für diese App',
       scopeHint: 'Wie im Studio Hub: Diese App sieht aus wie alle anderen und folgt Änderungen im Hub. Nur für diese App: Design und Layout, die du hier wählst, gelten nur für diese App.',
@@ -68,7 +72,7 @@
   }
   function layoutMock(name) {
     const o = layoutOptions(name, known);
-    const cls = [o.tools === 'right' && 'tr', o.dock === 'left' && 'dl', o.float === 'on' && 'fl', o.font === 'mono' && 'mo'].filter(Boolean).join(' ');
+    const cls = [o.tools === 'right' && 'tr', o.dock === 'left' && 'dl', o.float === 'on' && 'fl', o.font === 'mono' && 'mo', name === 'focus' && 'fo'].filter(Boolean).join(' ');
     return `<div class="lo-mock ${cls}"><b></b><u></u><div class="lo-row"><i class="r"></i><i class="c">${o.font === 'mono' ? '&gt;_' : ''}</i><i class="d"></i></div>${o.status === 'on' ? '<u></u>' : ''}</div>`;
   }
   function layoutPicker() {

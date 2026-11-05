@@ -12,9 +12,9 @@ use serde_json::{Map, Value};
 use std::path::{Path, PathBuf};
 use tauri::{AppHandle, Manager};
 
-const THEMES: [&str; 5] = ["dark", "light", "github", "github-dark", "cli"];
+const THEMES: [&str; 11] = ["dark", "light", "github", "github-dark", "cli", "midnight", "dusk", "graphite", "contrast", "sand", "rose"];
 const LANGS: [&str; 3] = ["auto", "en", "de"];
-const LAYOUTS: [&str; 4] = ["adobe", "custom", "modern", "cli"];
+const LAYOUTS: [&str; 6] = ["adobe", "custom", "modern", "cli", "focus", "mirror"];
 
 /// The options of the layout "custom": only known options with valid values.
 fn custom_layout_ok(o: &Map<String, Value>) -> bool {
@@ -160,6 +160,13 @@ mod tests {
         let c = merge(Map::new(), json!({"layoutCustom": {"font": "mono", "dock": "left"}}).as_object().unwrap());
         assert_eq!(c["layoutCustom"], json!({"font": "mono", "dock": "left"}));
         assert_eq!(merge(Map::new(), json!({"layoutCustom": {"font": "comic"}}).as_object().unwrap()).len(), 0);
+        // The newer themes and layouts
+        for th in ["midnight", "dusk", "graphite", "contrast", "sand", "rose"] {
+            assert_eq!(merge(Map::new(), json!({"theme": th}).as_object().unwrap())["theme"], th);
+        }
+        let c = merge(Map::new(), json!({"layout": "focus", "apps": {"pd": {"theme": "sand", "layout": "mirror"}}}).as_object().unwrap());
+        assert_eq!(Value::Object(c), json!({"layout": "focus", "apps": {"pd": {"theme": "sand", "layout": "mirror"}}}));
+        assert_eq!(merge(Map::new(), json!({"theme": "neon", "layout": "zen"}).as_object().unwrap()).len(), 0);
         // Own looks per app
         let a = merge(m.clone(), json!({"apps": {"md": {"theme": "light", "layout": "modern", "evil": 1}, "pd": {"theme": "neon"}, "BAD!": {"theme": "light"}}}).as_object().unwrap());
         assert_eq!(a["apps"], json!({"md": {"theme": "light", "layout": "modern"}}), "bad entries, keys and ids are ignored");
