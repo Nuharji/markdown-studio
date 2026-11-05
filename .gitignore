@@ -6,3 +6,4 @@ flatpak/*.deb
 .flatpak-builder/
 build.log
 flatpak/app.deb
+Todo.md
