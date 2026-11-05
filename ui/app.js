@@ -1076,7 +1076,7 @@ function renderSettings() {
     general: `<h3>${t('set.language')}</h3><p class="hint">${t('set.languageHint')}</p>
       <select class="wide-sel" data-sel="lang">${opt('auto', t('a.langAuto'), settings.lang)}${opt('en', 'English', settings.lang)}${opt('de', 'Deutsch', settings.lang)}</select>
       <h3>${t('set.layout')}</h3>${sw('dock', t('set.panels'))}${sw('autoHide', t('set.autoHide'))}`,
-    appearance: `<h3>${t('set.theme')}</h3><div class="theme-grid">` + THEMES.map(th =>
+    appearance: (window.Shared ? Shared.scopePicker() : '') + `<h3>${t('set.theme')}</h3><div class="theme-grid">` + THEMES.map(th =>
         `<button class="theme-card${settings.theme === th ? ' active' : ''}" data-theme-pick="${th}">${mock(th)}
          <div class="theme-name">${esc(t('theme.' + th))}<span>${settings.theme === th ? '&#10003;' : ''}</span></div></button>`).join('') + `</div>` + (window.Shared ? Shared.layoutHeading() : '') + `
       <h3>${t('set.paper')}</h3><p class="hint">${t('set.paperHint')}</p>
@@ -1321,7 +1321,7 @@ window.__md = {docs: () => docs, cur, openNative, A, ed, runSpell, spellIssues: 
   try { saved = JSON.parse(localStorage.getItem(STORE)); } catch (e) {}
   if (saved && saved.settings) settings = {...DEF, ...saved.settings};
   // Theme and language shared by all Studio apps (shared.js); the shared values win over this app's own.
-  if (window.Shared) await Shared.init({apply: sh => {
+  if (window.Shared) await Shared.init({app: 'md', apply: sh => {
     if (sh.theme) settings.theme = sh.theme;
     if (sh.lang) settings.lang = sh.lang;
     if (booted) applySettings();

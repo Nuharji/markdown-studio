@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.16.0 — 2026-11-05
+- New: own theme and layout for this app. Settings → Appearance → "Only for this app": the theme and layout you choose here stay with Markdown Studio; "Like Studio Hub" (default) keeps it looking like all Studio apps. Also settable in Studio Hub 1.13 → Theme per app.
+
 ## 1.15.1 — 2026-11-03
 - Fix (macOS): the app no longer asks again and again for access to your Documents folder (or Desktop, Downloads). The app is now signed as a whole, so macOS can remember your answer. After an update, macOS may ask once more.
 

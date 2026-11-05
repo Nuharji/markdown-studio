@@ -5,6 +5,8 @@
 //! (shared.js) and writes back its own theme and language changes — so all apps look and speak alike. File dialogs
 //! start in the work folder. The sync folder (e.g. in iCloud Drive, OneDrive or Dropbox) is where apps with their own
 //! data (Plan Studio's plan) keep it, so two computers share it.
+//! An app can have its own look: `apps.<app>` (e.g. `apps.md`) holds its own theme, layout and layoutCustom, which win
+//! over the shared ones for that app (set in the app — „Nur für diese App“ — or in Studio Hub → Design pro App).
 
 use serde_json::{Map, Value};
 use std::path::{Path, PathBuf};
@@ -30,6 +32,26 @@ fn custom_layout_ok(o: &Map<String, Value>) -> bool {
     })
 }
 
+/// One app's own look: only known keys with valid values; None when nothing valid is left.
+fn app_entry(o: &Map<String, Value>) -> Option<Value> {
+    let mut e = Map::new();
+    for (k, v) in o {
+        let ok = match (k.as_str(), v) {
+            ("theme", Value::String(s)) => THEMES.contains(&s.as_str()),
+            ("layout", Value::String(s)) => LAYOUTS.contains(&s.as_str()),
+            ("layoutCustom", Value::Object(c)) => custom_layout_ok(c),
+            _ => false,
+        };
+        if ok { e.insert(k.clone(), v.clone()); }
+    }
+    (!e.is_empty()).then_some(Value::Object(e))
+}
+
+/// App ids are short lower-case names (md, pd, dt, sl, pl, vw, ag, hub).
+fn app_id_ok(id: &str) -> bool {
+    (2..=8).contains(&id.len()) && id.bytes().all(|b| b.is_ascii_lowercase())
+}
+
 fn file(app: &AppHandle) -> Option<PathBuf> {
     // Debug builds only: test copies can use their own folder (STUDIO_SHARED_DIR), so they never change the real
     // shared settings of the installed apps.
@@ -47,6 +69,19 @@ pub fn merge(mut cur: Map<String, Value>, patch: &Map<String, Value>) -> Map<Str
     for (k, v) in patch {
         let ok = match (k.as_str(), v) {
             (_, Value::Null) => { cur.remove(k); continue; }
+            // Entries are replaced whole; null removes one (the app follows the hub again).
+            ("apps", Value::Object(p)) => {
+                let mut apps = cur.get("apps").and_then(Value::as_object).cloned().unwrap_or_default();
+                for (id, e) in p.iter().filter(|(id, _)| app_id_ok(id)) {
+                    match e.as_object().and_then(app_entry) {
+                        Some(v) => { apps.insert(id.clone(), v); }
+                        None if e.is_null() => { apps.remove(id); }
+                        None => {}
+                    }
+                }
+                if apps.is_empty() { cur.remove("apps"); } else { cur.insert("apps".into(), Value::Object(apps)); }
+                continue;
+            }
             ("theme", Value::String(s)) => THEMES.contains(&s.as_str()),
             ("lang", Value::String(s)) => LANGS.contains(&s.as_str()),
             ("layout", Value::String(s)) => LAYOUTS.contains(&s.as_str()),
@@ -118,6 +153,16 @@ mod tests {
         assert_eq!(m2["layout"], "custom", "unknown layouts are ignored");
         assert_eq!(m2["layoutCustom"]["dock"], "left", "bad options are ignored");
         assert_eq!(merge(Map::new(), json!({"layoutCustom": {"evil": "left"}}).as_object().unwrap()).len(), 0);
+        // Own looks per app
+        let a = merge(m.clone(), json!({"apps": {"md": {"theme": "light", "layout": "modern", "evil": 1}, "pd": {"theme": "neon"}, "BAD!": {"theme": "light"}}}).as_object().unwrap());
+        assert_eq!(a["apps"], json!({"md": {"theme": "light", "layout": "modern"}}), "bad entries, keys and ids are ignored");
+        assert_eq!(a["theme"], "light", "the shared theme stays");
+        let a = merge(a, json!({"apps": {"dt": {"layoutCustom": {"dock": "left"}}}}).as_object().unwrap());
+        assert_eq!(a["apps"].as_object().unwrap().len(), 2, "other apps are kept");
+        let a = merge(a, json!({"apps": {"md": {"theme": "github"}}}).as_object().unwrap());
+        assert_eq!(a["apps"]["md"], json!({"theme": "github"}), "an entry is replaced whole");
+        let a = merge(a, json!({"apps": {"md": null, "dt": null}}).as_object().unwrap());
+        assert!(a.get("apps").is_none(), "null removes an entry; no entries left removes apps");
         let dir = std::env::temp_dir().join(format!("studio-shared-test-{}", std::process::id()));
         let path = dir.join("Studio").join("shared.json");
         write_to(&path, &m).unwrap();
