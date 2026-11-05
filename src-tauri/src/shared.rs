@@ -12,7 +12,7 @@ use serde_json::{Map, Value};
 use std::path::{Path, PathBuf};
 use tauri::{AppHandle, Manager};
 
-const THEMES: [&str; 11] = ["dark", "light", "github", "github-dark", "cli", "midnight", "dusk", "graphite", "contrast", "sand", "rose"];
+const THEMES: [&str; 15] = ["dark", "light", "github", "github-dark", "cli", "cli-amber", "cli-cyan", "cli-magenta", "cli-white", "midnight", "dusk", "graphite", "contrast", "sand", "rose"];
 const LANGS: [&str; 3] = ["auto", "en", "de"];
 const LAYOUTS: [&str; 6] = ["adobe", "custom", "modern", "cli", "focus", "mirror"];
 
@@ -161,7 +161,7 @@ mod tests {
         assert_eq!(c["layoutCustom"], json!({"font": "mono", "dock": "left"}));
         assert_eq!(merge(Map::new(), json!({"layoutCustom": {"font": "comic"}}).as_object().unwrap()).len(), 0);
         // The newer themes and layouts
-        for th in ["midnight", "dusk", "graphite", "contrast", "sand", "rose"] {
+        for th in ["midnight", "dusk", "graphite", "contrast", "sand", "rose", "cli-amber", "cli-cyan", "cli-magenta", "cli-white"] {
             assert_eq!(merge(Map::new(), json!({"theme": th}).as_object().unwrap())["theme"], th);
         }
         let c = merge(Map::new(), json!({"layout": "focus", "apps": {"pd": {"theme": "sand", "layout": "mirror"}}}).as_object().unwrap());
