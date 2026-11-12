@@ -14,7 +14,7 @@ use tauri::{AppHandle, Manager};
 
 const THEMES: [&str; 15] = ["dark", "light", "github", "github-dark", "cli", "cli-amber", "cli-cyan", "cli-magenta", "cli-white", "midnight", "dusk", "graphite", "contrast", "sand", "rose"];
 const LANGS: [&str; 3] = ["auto", "en", "de"];
-const LAYOUTS: [&str; 6] = ["adobe", "custom", "modern", "cli", "focus", "mirror"];
+const LAYOUTS: [&str; 7] = ["adobe", "custom", "modern", "cli", "focus", "mirror", "room"];
 
 /// The options of the layout "custom": only known options with valid values.
 fn custom_layout_ok(o: &Map<String, Value>) -> bool {
@@ -167,6 +167,9 @@ mod tests {
         let c = merge(Map::new(), json!({"layout": "focus", "apps": {"pd": {"theme": "sand", "layout": "mirror"}}}).as_object().unwrap());
         assert_eq!(Value::Object(c), json!({"layout": "focus", "apps": {"pd": {"theme": "sand", "layout": "mirror"}}}));
         assert_eq!(merge(Map::new(), json!({"theme": "neon", "layout": "zen"}).as_object().unwrap()).len(), 0);
+        // 3D (Beta)
+        let c = merge(Map::new(), json!({"layout": "room", "apps": {"ag": {"layout": "room"}}}).as_object().unwrap());
+        assert_eq!(Value::Object(c), json!({"layout": "room", "apps": {"ag": {"layout": "room"}}}));
         // Own looks per app
         let a = merge(m.clone(), json!({"apps": {"md": {"theme": "light", "layout": "modern", "evil": 1}, "pd": {"theme": "neon"}, "BAD!": {"theme": "light"}}}).as_object().unwrap());
         assert_eq!(a["apps"], json!({"md": {"theme": "light", "layout": "modern"}}), "bad entries, keys and ids are ignored");

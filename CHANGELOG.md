@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.20.0 — 2026-11-12
+- New (Beta): layout **3D (Beta)** — Markdown Studio as a real **bookcase**. The open folder stands in it: one shelf per folder (with a brass name plate), one book per note, colored like the folder in the graph; without a folder the open documents and the recently opened files stand there. A click (or Tab + Enter) opens the note, a book you point at slides out, the open note sticks out a little. Drag turns the room, the wheel / pinch zooms, Shift + drag moves it, the search field finds books. "To the app" (or Esc) shows the normal window, the button "3D view" at the bottom right brings the bookcase back. Choose it in Settings → Appearance → Layout. Plain CSS 3D, follows the theme.
+
 ## 1.19.0 — 2026-11-05
 - New: four more CLI themes with other accent colors — CLI Amber, CLI Cyan, CLI Magenta and CLI White (black, monospace, square, like CLI (Terminal), just not green). Choose them like the other themes (Settings → Appearance or Settings menu → Theme).
 

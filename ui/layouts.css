@@ -86,3 +86,7 @@ html[data-l-float="on"] body:has(>main) .card{box-shadow:var(--shadow)}
 .lo-mock.mo .c{font:700 11px/1 ui-monospace,Menlo,Consolas,monospace;color:var(--accent);padding:5px 6px}
 .lo-mock.fo>b,.lo-mock.fo .lo-row i{border-color:transparent}
 .lo-mock.fo .r{opacity:.45}
+/* 3D (Beta): a small shelf in perspective */
+.lo-mock.r3d{align-items:center;justify-content:center;perspective:120px;background:linear-gradient(var(--bg),var(--hover))}
+.lo-3d{width:46%;height:76%;display:flex;flex-direction:column;justify-content:space-around;padding:3px;border:3px solid #8d5d39;background:#4f321e;transform:rotateY(-22deg) rotateX(6deg)}
+.lo-3d i{display:block;height:24%;border-bottom:2px solid #8d5d39;background:repeating-linear-gradient(90deg,#c0504d 0 4px,#4f81bd 4px 7px,#9bbb59 7px 10px,#e5a33a 10px 13px,transparent 13px 15px)}

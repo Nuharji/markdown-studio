@@ -774,6 +774,42 @@ window.Folder = (() => {
   // app.js's start may already be over when this file loads (then it couldn't hand over the saved folder).
   if (booted) { try { restore((JSON.parse(localStorage.getItem(STORE)) || {}).folder); } catch (e) {} }
 
+  /* ================= 3D (Beta): the bookcase ================= */
+  /* Layout „3D (Beta)“ (room3d.js): the open folder as a bookcase — a shelf per folder, a book per note (colored like the
+     folder in the graph); without a folder the open documents and the recently opened files stand on the shelves. */
+  const R3 = {
+    en: {title: 'Bookcase', open: 'Open documents', recent: 'Recently opened', empty: 'No notes yet. Open a folder and its notes stand here as books.', pick: 'Open folder…', top: 'Notes'},
+    de: {title: 'Bücherschrank', open: 'Offene Dokumente', recent: 'Zuletzt geöffnet', empty: 'Noch keine Notizen. Öffne einen Ordner — seine Notizen stehen hier als Bücher.', pick: 'Ordner öffnen…', top: 'Notizen'}
+  };
+  const r3 = k => (R3[lang] || R3.en)[k];
+  function roomScene() {
+    const act = docPath(cur()), groups = [];
+    if (root && tree) {
+      const colors = graph ? groupColors() : new Map(), sep = sepOf(root);
+      const colorOf = dir => dir === root ? null : colors.get(dir.slice(root.length + 1).split(sep)[0]) || null;
+      const add = (label, dir, list) => {
+        const notes = list.filter(e => !e.dir);
+        if (notes.length) groups.push({label: dir === root ? label : relDir(dir).slice(tree.name.length + 1), items: notes.map(e => ({id: 'n:' + e.path, label: stem(e.name), sub: relDir(dir),
+          color: colorOf(dir), active: e.path === act}))});
+        list.filter(e => e.dir).forEach(e => add(relDir(e.path), e.path, e.children));
+      };
+      add(tree.name, root, tree.children);
+    } else {
+      if (docs.length) groups.push({label: r3('open'), items: docs.map((d, i) => ({id: 'd:' + i, label: stem(d.name), sub: docPath(d) || '', active: i === active}))});
+      const open = new Set(docs.map(docPath));
+      const rec = recent.filter(r => !open.has(r.path));
+      if (rec.length) groups.push({label: r3('recent'), items: rec.map(r => ({id: 'r:' + r.path, label: stem(r.name), sub: r.path}))});
+    }
+    return {kind: 'shelf', item: 'book', groups, empty: r3('empty'), emptyAction: invoke ? {label: r3('pick'), run: pick} : null};
+  }
+  function roomOpen(id) {
+    const kind = id.slice(0, 2), v = id.slice(2);
+    if (kind === 'n:') openNote(v);
+    else if (kind === 'd:') activate(+v);
+    else if (kind === 'r:') { const r = recent.find(x => x.path === v); if (r) invoke('read_file', {path: r.path}).then(f => openNative([f])).catch(() => toast(t('toast.missing', {name: r.name}))); }
+  }
+  if (window.Room3D) Room3D.register({data: roomScene, open: roomOpen, title: () => r3('title') + (tree ? ' — ' + tree.name : '')});
+
   return {pick, close, toggle, showGraph, menu, action, onActive, onDirty, typed, saved, state, restore, renderLinks, language,
     get root() { return root; }, get visible() { return visible && !!invoke; }, get graphOpen() { return graphOpen; }, under,
     graphData: () => graph, views: {bigView, localView}, hideDir, get hidden() { return hiddenDirs(); }};

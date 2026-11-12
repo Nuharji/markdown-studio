@@ -1,0 +1,107 @@
+/* The 3D view „3D (Beta)“ of the Studio apps (the same file in every app that has one; room3d.js builds it). Plain CSS 3D:
+   every thing is a box of faces (.r3-box with --d = its depth); the colors follow the theme where it makes sense. */
+.r3{position:fixed;inset:0;z-index:var(--r3-z,150);display:flex;flex-direction:column;background:var(--workarea,var(--bg));color:var(--text);font-family:var(--font-ui);user-select:none;-webkit-user-select:none}
+.r3[hidden],.r3-pill[hidden],.r3-msg[hidden]{display:none!important}
+html.r3-open .toast{z-index:calc(var(--r3-z,150) + 100)}
+.r3-bar{display:flex;align-items:center;gap:8px;padding:7px 12px;background:var(--chrome);border-bottom:1px solid var(--border);flex:none}
+.r3-title{font-size:13px;color:var(--strong);white-space:nowrap}
+.r3-beta{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:2px 6px;border-radius:8px;background:var(--accent);color:var(--on-accent)}
+.r3-q{margin-left:8px;width:200px;padding:4px 8px;border-radius:var(--radius);border:1px solid var(--input-border,var(--border));background:var(--input-bg,var(--bg));color:var(--text);font:inherit;font-size:12px}
+.r3-flex{flex:1}
+.r3-btn{font:inherit;font-size:12px;padding:4px 10px;min-width:28px;border-radius:var(--btn-radius,6px);border:1px solid var(--border);background:var(--chrome2,var(--panel));color:var(--text);cursor:pointer}
+.r3-btn:hover{background:var(--hover)}
+.r3-btn.r3-primary{background:var(--cta,var(--accent));border-color:transparent;color:var(--on-accent,#fff)}
+.r3-btn:focus-visible,.r3-q:focus-visible,.r3-pill:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.r3-stage{position:relative;flex:1;overflow:hidden;perspective:1700px;perspective-origin:50% 38%;cursor:grab;
+  background:radial-gradient(ellipse at 50% 30%,color-mix(in srgb,var(--workarea,var(--bg)) 80%,#fff 20%),var(--workarea-dark,var(--bg)))}
+.r3-stage.r3-dragging{cursor:grabbing}
+.r3-cam{position:absolute;left:50%;top:50%;width:0;height:0;transform-style:preserve-3d}
+.r3-world,.r3-slot{position:absolute;left:0;top:0;transform-style:preserve-3d}
+.r3-msg{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);text-align:center;padding:18px 24px;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);max-width:420px}
+.r3-msg p{margin:0 0 12px;color:var(--text)}
+.r3-foot{display:flex;gap:16px;padding:5px 12px;font-size:11px;color:var(--dim);background:var(--chrome);border-top:1px solid var(--border);flex:none;min-height:16px}
+.r3-tip{color:var(--strong);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.r3-pill{position:fixed;right:16px;bottom:34px;z-index:calc(var(--r3-z,150) - 1);display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:18px;border:1px solid var(--border);
+  background:var(--panel);color:var(--strong);font:inherit;font-size:12px;box-shadow:var(--shadow);cursor:pointer}
+.r3-pill:hover{border-color:var(--accent)}
+.r3-pill em{font-style:normal;font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent)}
+
+/* ---- boxes: front at the box's plane, sides and top turned back by --d ---- */
+.r3-box{position:absolute;transform-style:preserve-3d}
+.r3-f{position:absolute;box-sizing:border-box;backface-visibility:hidden;-webkit-backface-visibility:hidden;overflow:hidden}
+.r3-front{left:0;top:0;width:100%;height:100%}
+.r3-right{left:100%;top:0;width:var(--d);height:100%;transform-origin:left center;transform:rotateY(90deg)}
+.r3-left{left:calc(-1 * var(--d));top:0;width:var(--d);height:100%;transform-origin:right center;transform:rotateY(-90deg)}
+.r3-top{left:0;top:calc(-1 * var(--d));width:100%;height:var(--d);transform-origin:center bottom;transform:rotateX(90deg)}
+.r3-right::after,.r3-left::after{content:"";position:absolute;inset:0;background:rgba(0,0,0,.28)}
+.r3-left::after{background:rgba(0,0,0,.16)}
+.r3-top::after{content:"";position:absolute;inset:0;background:rgba(255,255,255,.08)}
+.r3-back{position:absolute}
+.r3-floor{position:absolute;left:-2200px;width:4400px;height:2600px;transform-origin:top center;transform:translateZ(-1300px) rotateX(90deg);
+  background:repeating-linear-gradient(90deg,rgba(0,0,0,.08) 0 2px,transparent 2px 120px),linear-gradient(color-mix(in srgb,var(--workarea,var(--bg)) 70%,#000 30%),color-mix(in srgb,var(--workarea,var(--bg)) 88%,#000 12%))}
+.r3-wall{position:absolute;left:-2200px;width:4400px;background:linear-gradient(color-mix(in srgb,var(--workarea,var(--bg)) 92%,#fff 8%),color-mix(in srgb,var(--workarea,var(--bg)) 85%,#000 15%))}
+.r3-more{position:absolute;left:-300px;width:600px;text-align:center;color:var(--dim);font-size:14px}
+
+/* ---- items: pulled out on hover / focus, the open one stands out ---- */
+.r3-item{cursor:pointer;transition:translate .18s ease}
+.r3-item:hover,.r3-item:focus-visible{translate:0 0 34px}
+.r3-item:focus{outline:none}
+.r3-item:focus-visible>.r3-front{outline:3px solid var(--accent);outline-offset:-3px}
+.r3-item.r3-active{translate:0 0 18px}
+.r3-item.r3-active>.r3-front{box-shadow:inset 0 0 0 2px var(--accent)}
+
+/* Bookcase */
+.r3-wood>.r3-f{background:linear-gradient(90deg,#7a4e2f,#8d5d39 40%,#7d5032);border:0}
+.r3-wood>.r3-top{background:linear-gradient(#9a6a44,#87593a)}
+.r3-wood-back{background:linear-gradient(#4f321e,#3d2616);box-shadow:inset 0 0 40px rgba(0,0,0,.5)}
+.r3-plate-at{position:absolute;height:16px;display:flex;justify-content:center;align-items:center;pointer-events:none}
+.r3-plate{font-size:10px;line-height:12px;padding:0 10px;max-width:60%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-radius:2px;
+  background:linear-gradient(#e6cf8f,#b8963f);color:#3a2a08;box-shadow:0 1px 2px rgba(0,0,0,.4)}
+.r3-book>.r3-f{background:var(--book)}
+.r3-book>.r3-front{display:flex;align-items:center;justify-content:center;padding:10px 0;
+  background:linear-gradient(90deg,rgba(0,0,0,.28),transparent 22%,rgba(255,255,255,.1) 50%,transparent 78%,rgba(0,0,0,.3)),var(--book);
+  box-shadow:inset 0 14px 0 -10px rgba(255,255,255,.18),inset 0 -14px 0 -10px rgba(255,255,255,.18)}
+.r3-spine{writing-mode:vertical-rl;transform:rotate(180deg);font-size:11px;line-height:1.1;color:#f6efe2;text-shadow:0 1px 1px rgba(0,0,0,.5);
+  max-height:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.r3-book>.r3-top{background:repeating-linear-gradient(90deg,#efe6d0 0 1px,#ddd2b8 1px 2px)}
+
+/* Device shelf (Studio Hub) */
+.r3-device>.r3-f{background:linear-gradient(#d9dbe0,#b9bcc4)}
+.r3-device>.r3-front{background:linear-gradient(#f2f3f5,#cfd2d8);border-radius:6px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.18)}
+.r3-dev-face{position:relative;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:8px;color:#1f2329}
+.r3-dev-face img{width:54px;height:54px;border-radius:12px;box-shadow:0 2px 6px rgba(0,0,0,.25);pointer-events:none}
+.r3-dev-face b{width:54px;height:54px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:var(--accent);color:var(--on-accent);font-size:20px}
+.r3-dev-name{font-size:12px;font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.r3-dev-face small{font-size:10px;color:#5b616b}
+.r3-dev-face .r3-led{position:absolute;right:8px;top:8px}
+
+/* Server rack (Agent Studio) */
+.r3-metal>.r3-f{background:linear-gradient(90deg,#24272c,#2f333a 50%,#24272c)}
+.r3-metal>.r3-top{background:#3a3f47}
+.r3-cab-back{background:repeating-linear-gradient(0deg,#121418 0 3px,#1a1d22 3px 6px)}
+.r3-rail{position:absolute;inset:0 6px;background:repeating-linear-gradient(#5b6170 0 3px,transparent 3px 14.6px);opacity:.7}
+.r3-vent{position:absolute;inset:30px 20px;background:repeating-linear-gradient(90deg,transparent 0 10px,rgba(0,0,0,.45) 10px 22px)}
+.r3-brand{position:absolute;left:12px;top:8px;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:#9aa3b2}
+.r3-unit>.r3-f{background:#30343b}
+.r3-unit>.r3-front{display:flex;align-items:center;gap:10px;padding:0 6px;color:#d9dee7;font-size:12px;
+  background:linear-gradient(#3b4048,#2a2e34);border-left:5px solid var(--unit,#6e7787);box-shadow:inset 0 1px rgba(255,255,255,.1),inset 0 -1px rgba(0,0,0,.4)}
+.r3-ear{width:10px;height:22px;flex:none;border-radius:2px;background:radial-gradient(circle at 50% 30%,#111 0 2px,transparent 3px),radial-gradient(circle at 50% 70%,#111 0 2px,transparent 3px),#555b66}
+.r3-leds{display:flex;gap:4px;flex:none}
+.r3-unit-name{font-weight:600;color:#f1f4f8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px}
+.r3-unit>.r3-front small{flex:1;color:#98a1b0;font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.r3-bays{display:flex;gap:3px;flex:none}
+.r3-bays i{width:14px;height:20px;border-radius:1px;background:linear-gradient(#20242a,#15181c);box-shadow:inset 0 0 0 1px #4a505b}
+.r3-blank>.r3-f{background:#202328}
+.r3-blank>.r3-front{display:flex;align-items:center;padding-left:16px;background:repeating-linear-gradient(90deg,#24282e 0 6px,#1e2126 6px 8px)}
+.r3-blank-label{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#d9c27a;background:#15171a;padding:2px 8px;border-radius:2px}
+
+/* LEDs: off, on (green), running (blinking blue activity), attention (amber), error (red) */
+.r3-led{width:7px;height:7px;border-radius:50%;background:#3a3f45;box-shadow:inset 0 0 1px rgba(0,0,0,.6)}
+.r3-st-on .r3-pwr,.r3-st-running .r3-pwr,.r3-st-attention .r3-pwr,.r3-st-error .r3-pwr,.r3-device.r3-st-on .r3-led{background:#3fdc6c;box-shadow:0 0 6px #3fdc6c}
+.r3-st-running .r3-act,.r3-device.r3-st-running .r3-led{background:#4aa8ff;box-shadow:0 0 7px #4aa8ff;animation:r3-blink .7s steps(2) infinite}
+.r3-st-attention .r3-act,.r3-device.r3-st-attention .r3-led{background:#ffb02e;box-shadow:0 0 7px #ffb02e;animation:r3-pulse 1.6s ease-in-out infinite}
+.r3-st-error .r3-act,.r3-device.r3-st-error .r3-led{background:#ff4d4d;box-shadow:0 0 7px #ff4d4d}
+@keyframes r3-blink{50%{opacity:.25}}
+@keyframes r3-pulse{50%{opacity:.45}}
+@media (prefers-reduced-motion:reduce){.r3-item{transition:none}.r3-led{animation:none!important}}
+@media print{.r3,.r3-pill{display:none!important}}
