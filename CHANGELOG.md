@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.21.0 — 2026-11-14
+- New: the app logo follows the theme — the logo in the menu bar, the big tile on the start page and, while the app runs, the icon in the Dock (macOS) and the taskbar / window icon (Windows, Linux). CLI themes: black with the accent color and an edge in it; High contrast: black and white with a yellow edge; Graphite: gray with the logo in the app's color; GitHub and Sand: a light card; GitHub Dark, Midnight and Dusk: tinted with the theme; Light and Rosé: the light tile. Dark keeps the usual icon.
+
 ## 1.20.0 — 2026-11-12
 - New (Beta): layout **3D (Beta)** — Markdown Studio as a real **bookcase**. The open folder stands in it: one shelf per folder (with a brass name plate), one book per note, colored like the folder in the graph; without a folder the open documents and the recently opened files stand there. A click (or Tab + Enter) opens the note, a book you point at slides out, the open note sticks out a little. Drag turns the room, the wheel / pinch zooms, Shift + drag moves it, the search field finds books. "To the app" (or Esc) shows the normal window, the button "3D view" at the bottom right brings the bookcase back. Choose it in Settings → Appearance → Layout. Plain CSS 3D, follows the theme.
 
