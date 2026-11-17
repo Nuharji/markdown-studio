@@ -30,6 +30,17 @@ html[data-layout="focus"] .main>.tools:hover,html[data-layout="focus"] .main>.to
 html[data-layout="focus"] body:has(>main) .card{border-color:transparent;box-shadow:var(--shadow)}
 html[data-layout="focus"] body:has(>main) header{border-color:transparent}
 
+/* Proton: one calm frame — bars, rail and panels share the frame color without lines; the work area is a rounded sheet */
+html[data-layout="proton"] .menubar,html[data-layout="proton"] .optbar{background:var(--chrome);border-color:transparent}
+html[data-layout="proton"] body:not(.full):not(.mini) .main{background:var(--chrome)}
+html[data-layout="proton"] .main>.tools,html[data-layout="proton"] .main>.dock,html[data-layout="proton"] .main>.files{background:var(--chrome);border-color:transparent}
+html[data-layout="proton"] .main>.dock .dock-tabs,html[data-layout="proton"] .main>.files .files-head{background:var(--chrome);border-color:transparent}
+html[data-layout="proton"] body:not(.full):not(.mini) .main>.center{background:var(--bg);border-radius:14px 14px 0 0;margin-right:8px;box-shadow:0 0 0 1px var(--line)}
+html[data-layout="proton"] body:has(>main){background:var(--chrome)}
+html[data-layout="proton"] body:has(>main) header{border-color:transparent}
+html[data-layout="proton"] body:has(>main)>main{background:var(--bg);border-radius:16px 16px 0 0;margin:0 10px}
+html[data-layout="proton"] body:has(>main) .card{border-color:transparent}
+
 /* Rail and panels on either side: flex, because a hidden panel must not shift the others */
 html[data-l-flex] .main{display:flex}
 html[data-l-flex] .main>.tools{flex:none;width:44px;order:0}
@@ -86,6 +97,10 @@ html[data-l-float="on"] body:has(>main) .card{box-shadow:var(--shadow)}
 .lo-mock.mo .c{font:700 11px/1 ui-monospace,Menlo,Consolas,monospace;color:var(--accent);padding:5px 6px}
 .lo-mock.fo>b,.lo-mock.fo .lo-row i{border-color:transparent}
 .lo-mock.fo .r{opacity:.45}
+.lo-mock.pr{background:var(--chrome)}
+.lo-mock.pr>b,.lo-mock.pr>u,.lo-mock.pr .lo-row i{background:var(--chrome);border-color:transparent}
+.lo-mock.pr .lo-row{padding:2px 3px 0 0}
+.lo-mock.pr .lo-row .c{background:var(--bg);border-radius:5px 5px 0 0;box-shadow:0 0 0 1px var(--border)}
 /* 3D (Beta): a small shelf in perspective */
 .lo-mock.r3d{align-items:center;justify-content:center;perspective:120px;background:linear-gradient(var(--bg),var(--hover))}
 .lo-3d{width:46%;height:76%;display:flex;flex-direction:column;justify-content:space-around;padding:3px;border:3px solid #8d5d39;background:#4f321e;transform:rotateY(-22deg) rotateX(6deg)}

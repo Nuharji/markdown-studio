@@ -21,6 +21,8 @@
     dusk: {tile: [['--chrome', 'tile-b', .12], ['--chrome', 'tile-b', .8]], fg: '#fff'},
     graphite: {tile: ['#2a2b2f', '#4a4c52'], fg: 'tile-b', ring: ['--border', 'tile-b', .35]},
     contrast: {tile: ['#000', '#000'], fg: '#fff', ring: '--accent'},
+    // Proton: the violet fade of the Proton apps, white card and letters
+    proton: {tile: ['#9b85ff', '#4a2ad8'], fg: '#fff'},
     cli: CLI, 'cli-amber': CLI, 'cli-cyan': CLI, 'cli-magenta': CLI, 'cli-white': CLI
   };
   const MONO = 'ui-monospace,"SF Mono","Cascadia Mono",Menlo,Consolas,"DejaVu Sans Mono",monospace';

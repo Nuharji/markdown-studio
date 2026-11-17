@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.22.0 — 2026-11-17
+- New: theme **Proton** — dark violet-grey with a violet accent, and the app logo in the violet fade of the Proton apps (menu bar, start page, Dock / taskbar).
+- New: layout **Proton** — one calm frame: menu, tool bar, rail and side panels share the frame color without lines, the panels sit on the left, the work area is a rounded sheet inside the frame; roomy, no status bar. Works with every theme.
+
 ## 1.21.0 — 2026-11-14
 - New: the app logo follows the theme — the logo in the menu bar, the big tile on the start page and, while the app runs, the icon in the Dock (macOS) and the taskbar / window icon (Windows, Linux). CLI themes: black with the accent color and an edge in it; High contrast: black and white with a yellow edge; Graphite: gray with the logo in the app's color; GitHub and Sand: a light card; GitHub Dark, Midnight and Dusk: tinted with the theme; Light and Rosé: the light tile. Dark keeps the usual icon.
 

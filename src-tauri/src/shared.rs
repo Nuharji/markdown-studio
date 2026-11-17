@@ -12,9 +12,9 @@ use serde_json::{Map, Value};
 use std::path::{Path, PathBuf};
 use tauri::{AppHandle, Manager};
 
-const THEMES: [&str; 15] = ["dark", "light", "github", "github-dark", "cli", "cli-amber", "cli-cyan", "cli-magenta", "cli-white", "midnight", "dusk", "graphite", "contrast", "sand", "rose"];
+const THEMES: [&str; 16] = ["dark", "light", "github", "github-dark", "cli", "cli-amber", "cli-cyan", "cli-magenta", "cli-white", "midnight", "dusk", "graphite", "contrast", "sand", "rose", "proton"];
 const LANGS: [&str; 3] = ["auto", "en", "de"];
-const LAYOUTS: [&str; 7] = ["adobe", "custom", "modern", "cli", "focus", "mirror", "room"];
+const LAYOUTS: [&str; 8] = ["adobe", "custom", "modern", "cli", "focus", "mirror", "room", "proton"];
 
 /// The options of the layout "custom": only known options with valid values.
 fn custom_layout_ok(o: &Map<String, Value>) -> bool {
@@ -167,6 +167,9 @@ mod tests {
         let c = merge(Map::new(), json!({"layout": "focus", "apps": {"pd": {"theme": "sand", "layout": "mirror"}}}).as_object().unwrap());
         assert_eq!(Value::Object(c), json!({"layout": "focus", "apps": {"pd": {"theme": "sand", "layout": "mirror"}}}));
         assert_eq!(merge(Map::new(), json!({"theme": "neon", "layout": "zen"}).as_object().unwrap()).len(), 0);
+        // Proton (theme and layout)
+        let c = merge(Map::new(), json!({"theme": "proton", "layout": "proton", "apps": {"ml": {"theme": "proton", "layout": "proton"}}}).as_object().unwrap());
+        assert_eq!(Value::Object(c), json!({"theme": "proton", "layout": "proton", "apps": {"ml": {"theme": "proton", "layout": "proton"}}}));
         // 3D (Beta)
         let c = merge(Map::new(), json!({"layout": "room", "apps": {"ag": {"layout": "room"}}}).as_object().unwrap());
         assert_eq!(Value::Object(c), json!({"layout": "room", "apps": {"ag": {"layout": "room"}}}));
