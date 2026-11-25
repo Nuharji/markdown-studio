@@ -9,6 +9,7 @@ mod shared;
 mod docx;
 mod edit;
 mod folder;
+mod images;
 mod markdown;
 mod spell;
 
@@ -445,6 +446,8 @@ fn main() {
             markdown::md_render,
             markdown::md_sources,
             docx::export_docx,
+            images::pick_image,
+            images::local_image,
             markdown::md_spell,
             spell::spell_check,
             spell::spell_suggest,

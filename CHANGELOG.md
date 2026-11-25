@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.23.0 — 2026-11-25
+- New: pictures from your computer. Insert → **Image from File…** (Ctrl+Shift+I, the tool rail or right-click in the editor) lets you choose one or more pictures (PNG, JPEG, GIF, WebP, SVG, BMP, ICO, AVIF) and writes `![name](path)` — relative to the note (`Bilder/x.png`, `../Bilder/x.png`), or with the full path if the note isn't saved yet. The preview now shows local pictures (relative or absolute paths, `file:///` links); a missing picture gets a dashed frame with a hint. Changed a picture in another program? Back in the app it's shown afresh. The HTML export embeds local pictures, so the page works on its own; Word export already did.
+
 ## 1.22.0 — 2026-11-17
 - New: theme **Proton** — dark violet-grey with a violet accent, and the app logo in the violet fade of the Proton apps (menu bar, start page, Dock / taskbar).
 - New: layout **Proton** — one calm frame: menu, tool bar, rail and side panels share the frame color without lines, the panels sit on the left, the work area is a rounded sheet inside the frame; roomy, no status bar. Works with every theme.

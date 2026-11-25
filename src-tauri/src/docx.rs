@@ -41,7 +41,7 @@ fn percent_decode(s: &str) -> String {
 
 /// The bytes of a picture on disk, from a Markdown image link: relative to the document's folder or absolute,
 /// percent-encoded or not, also file:/// links. Web addresses aren't fetched (the export stays offline).
-fn local_picture(url: &str, base: Option<&Path>) -> Option<Vec<u8>> {
+pub(crate) fn local_picture(url: &str, base: Option<&Path>) -> Option<Vec<u8>> {
     let url = url.trim();
     let (url, decode_only) = match url.strip_prefix("file:///").or_else(|| url.strip_prefix("file://")) {
         Some(rest) => (rest, true),

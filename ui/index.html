@@ -36,6 +36,7 @@
 .md th,.md td{border:1px solid #dcdcdc;padding:6px 12px}.md th{background:#f3f3f3;font-weight:600}
 .md tr:nth-child(2n) td{background:#fafafa}
 .md img{max-width:100%;border-radius:4px}
+.md img.img-missing{min-width:2.5em;min-height:1.6em;outline:1px dashed currentColor;outline-offset:2px;opacity:.6}
 .md hr{border:0;border-top:2px solid #e6e6e6;margin:2em 0}
 .md ul,.md ol{padding-left:1.8em}.md li+li{margin-top:.25em}
 .md li:has(>input[type=checkbox]){list-style:none;margin-left:-1.4em}
@@ -1047,8 +1048,8 @@ Read the [spec][cm] or the [tutorial][cm].
 @@ Internal links | Link to a heading with `#` and its lowercase, dash-separated name.
 @de Interne Links | Mit `#` und dem kleingeschriebenen, durch Bindestriche verbundenen Namen auf eine Überschrift verlinken.
 Jump to [the quick start](#quick-start).
-@@ Images | Like a link, prefixed with `!`. The bracket text is the alt text.
-@de Bilder | Wie ein Link, mit vorangestelltem `!`. Der Text in eckigen Klammern ist der Alternativtext.
+@@ Images | Like a link, prefixed with `!`. The bracket text is the alt text. A picture on your computer: Insert → Image from File… (or a path like `Bilder/x.png`, relative to the note).
+@de Bilder | Wie ein Link, mit vorangestelltem `!`. Der Text in eckigen Klammern ist der Alternativtext. Ein Bild auf deinem Computer: Einfügen → Bild aus Datei … (oder ein Pfad wie `Bilder/x.png`, relativ zur Notiz).
 ![Placeholder](https://placehold.co/240x80/378ef0/ffffff?text=Image)
 @@ Bulleted list | Start lines with `-`, `*` or `+`. Indent 2 spaces to nest.
 @de Aufzählung | Zeilen mit `-`, `*` oder `+` beginnen. Zum Verschachteln 2 Leerzeichen einrücken.

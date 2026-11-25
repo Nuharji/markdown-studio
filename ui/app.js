@@ -89,7 +89,50 @@ function renderInto(root, r) {
     if (hljs.getLanguage(l)) hljs.highlightElement(c);
   });
   root.querySelectorAll('a[href^="http"]').forEach(a => { a.target = '_blank'; a.rel = 'noopener'; });
+  return localImages(root);
 }
+
+/* Pictures on this computer (![alt](Bilder/x.png), relative to the note, or absolute): the webview can't read files,
+   so Rust hands each one over as a data: URL (images.rs) — kept for a while, so typing doesn't reload them. */
+const imgCache = new Map();
+const isLocalSrc = s => !!s && (/^file:/i.test(s) || /^[a-z]:[\\/]/i.test(s) || !/^([a-z][a-z0-9+.-]*:|\/\/|#)/i.test(s));
+function localImages(root) {
+  if (!invoke) return Promise.resolve();
+  const d = cur(), doc = d && typeof d.handle === 'string' ? d.handle : null, waits = [];
+  if (imgCache.size > 300) imgCache.clear();
+  root.querySelectorAll('img[src]').forEach(img => {
+    const src = img.getAttribute('src');
+    if (!isLocalSrc(src)) return;
+    const key = (doc || '') + '\n' + src;
+    let hit = imgCache.get(key);
+    img.dataset.src = src;
+    if (typeof hit === 'string') return hit ? (img.src = hit) : missingImg(img, src, doc);
+    img.removeAttribute('src');
+    if (!hit) {
+      hit = invoke('local_image', {src, doc}).catch(() => null).then(u => { imgCache.set(key, u || ''); return u || ''; });
+      imgCache.set(key, hit);
+    }
+    waits.push(hit.then(u => u ? (img.src = u) : missingImg(img, src, doc)));
+  });
+  return Promise.all(waits);
+}
+function missingImg(img, src, doc) {
+  img.classList.add('img-missing');
+  img.title = t(doc || /^(\/|[a-z]:[\\/]|file:)/i.test(src) ? 'img.missing' : 'img.unsaved', {name: (() => { try { return decodeURIComponent(src); } catch (e) { return src; } })()});
+}
+// Back from another program (a picture may have been edited there): fetch the shown pictures again, swap changed ones.
+window.addEventListener('focus', () => {
+  const d = cur(), doc = d && typeof d.handle === 'string' ? d.handle : null;
+  if (!invoke || !imgCache.size) return;
+  imgCache.clear();
+  paper.querySelectorAll('img[data-src]').forEach(img => {
+    const src = img.dataset.src, key = (doc || '') + '\n' + src;
+    invoke('local_image', {src, doc}).catch(() => null).then(u => {
+      if (!imgCache.has(key)) imgCache.set(key, u || '');
+      if (u && img.src !== u) { img.src = u; img.classList.remove('img-missing'); img.removeAttribute('title'); }
+    });
+  });
+});
 
 /* ================= Documents & session ================= */
 const THEMES = ['dark', 'light', 'github', 'github-dark', 'cli', 'cli-amber', 'cli-cyan', 'cli-magenta', 'cli-white', 'midnight', 'dusk', 'graphite', 'contrast', 'sand', 'rose', 'proton'];
@@ -298,14 +341,14 @@ ed.addEventListener('input', () => {
   updateCursor();
 });
 
-let renderSeq = 0;
+let renderSeq = 0, imagesReady = Promise.resolve();
 async function render() {
   clearTimeout(rT);
   if (!LIBS_OK) { paper.textContent = ed.value; return; }
   // Results of older keystrokes that arrive late are ignored.
   const my = ++renderSeq, [r] = await mdRender([ed.value]);
   if (my !== renderSeq) return;
-  renderInto(paper, r);
+  imagesReady = renderInto(paper, r);
   invalidateSync(); buildOutline(r); updateStats(r);
   if (renderJob) { renderJob.done(); renderJob = null; }
   if (spellFor !== ed.value) { drawMarks(); scheduleSpell(spellFor ? 700 : 150); }
@@ -632,7 +675,7 @@ async function save(as) {
 }
 /* HTML export: the page around the preview is put together and saved by Rust (main.rs: html_page). */
 async function exportHtml() {
-  await render();
+  await render(); await imagesReady;   // local pictures go into the page as data: URLs
   const d = cur(), body = paper.cloneNode(true);
   body.querySelectorAll('.dg-tools').forEach(el => el.remove());
   const page = {title: d.name.replace(/\.[^.]+$/, '') || 'document', lang, body: body.innerHTML, css: $('#md-css').textContent,
@@ -803,6 +846,7 @@ const ICONS = {
   search: '<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>',
   link: '<svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>',
   image: '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/></svg>',
+  imageFile: '<svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><circle cx="9" cy="11" r="1.5"/><path d="m21 16-4-4-8 7"/></svg>',
   code: '<svg viewBox="0 0 24 24"><path d="m16 18 6-6-6-6M8 6l-6 6 6 6"/></svg>',
   codeblock: '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="m10 9-3 3 3 3M14 9l3 3-3 3"/></svg>',
   quote: '<svg viewBox="0 0 24 24"><path d="M4 5v14M9 7h11M9 12h11M9 17h7"/></svg>',
@@ -886,6 +930,19 @@ const A = {
     const {s, e, sel} = selInfo(), txt = sel || (lang === 'de' ? 'Alternativtext' : 'alt text');
     replaceRange(s, e, `![${txt}](https://)`, s + txt.length + 4, s + txt.length + 12);
   },
+  // A picture on this computer: chosen in the file dialog, linked relative to the note (absolute if not saved yet).
+  imageFile: async () => {
+    if (!invoke) return A.image();
+    const d = cur(), doc = typeof d.handle === 'string' ? d.handle : null;
+    let list;
+    try { list = await invoke('pick_image', {doc}); } catch (e) { return toast(t('toast.openFail', {e})); }
+    if (!list.length || d !== cur()) return;
+    const {s, e, sel} = selInfo(), alt = (list.length === 1 && sel.trim() && !sel.includes('\n')) ? sel.replace(/[[\]]/g, '') : null;
+    const md = list.map(p => `![${alt ?? p.alt}](${p.link})`).join('\n\n');
+    const first = alt ?? list[0].alt;
+    replaceRange(s, e, md, s + 2, s + 2 + first.length);
+    if (!doc) toast(t('toast.imgAbsolute'));
+  },
   ul: () => listCmd('ul'), ol: () => listCmd('ol'), task: () => listCmd('task'), quote: () => listCmd('quote'),
   codeblock: () => { const {sel} = selInfo(); sel ? insertBlock(F + '\n' + sel.replace(/\n$/, '') + '\n' + F) : insertBlock(F + 'js\n// code\n' + F, 6, 7); },
   table: () => {
@@ -953,7 +1010,7 @@ const MENUS = [
   ['edit', [['undo', 'Ctrl+Z', null, true], ['redo', 'Ctrl+Y', null, true], '-', ['find', 'Ctrl+F'], ['findNext', 'F3'], ['nextIssue', 'F7'], '-',
     ['selectAll', 'Ctrl+A', null, true]]],
   ['insert', [['h1', 'Ctrl+Shift+1'], ['h2', 'Ctrl+Shift+2'], ['h3', 'Ctrl+Shift+3'], ['para', 'Ctrl+Shift+0'], '-',
-    ['bold', 'Ctrl+B'], ['italic', 'Ctrl+I'], ['strike', 'Ctrl+Shift+X'], ['code', 'Ctrl+`'], ['link', 'Ctrl+K'], ['image', 'Ctrl+Shift+G'], '-',
+    ['bold', 'Ctrl+B'], ['italic', 'Ctrl+I'], ['strike', 'Ctrl+Shift+X'], ['code', 'Ctrl+`'], ['link', 'Ctrl+K'], ['image', 'Ctrl+Shift+G'], ['imageFile', 'Ctrl+Shift+I'], '-',
     ['ul', 'Ctrl+Shift+8'], ['ol', 'Ctrl+Shift+7'], ['task', 'Ctrl+Shift+9'], ['quote', 'Ctrl+Shift+.'],
     ['codeblock', 'Ctrl+Shift+K'], ['table', 'Ctrl+Shift+L'], ['hr', 'Ctrl+Shift+-'], ['diagram', 'Ctrl+Shift+D'], '-',
     ['mathInline', 'Ctrl+M'], ['mathBlock', 'Ctrl+Shift+M'], '-', ['sketch', 'Ctrl+Shift+Y'], ['cite', 'Ctrl+Shift+Q'], ['wikilink', 'Ctrl+Shift+W'], '-', ['toc'], ['date']]],
@@ -1018,7 +1075,7 @@ const RAIL = [
   ['heading', '<b class="g">H</b>'], '-',
   ['bold', '<b class="g" style="font-weight:800">B</b>'], ['italic', '<i class="g serif" style="font-size:17px">I</i>'],
   ['strike', '<s class="g">S</s>'], ['code', ICONS.code], '-',
-  ['link', ICONS.link], ['image', ICONS.image], '-',
+  ['link', ICONS.link], ['image', ICONS.image], ['imageFile', ICONS.imageFile], '-',
   ['ul', ICONS.ul], ['ol', ICONS.ol], ['task', ICONS.task], ['quote', ICONS.quote], '-',
   ['codeblock', ICONS.codeblock], ['table', ICONS.table], ['hr', ICONS.hr], ['diagram', ICONS.diagram], '-',
   ['mathInline', '<span class="g serif"><i>x</i>²</span>'], ['mathBlock', '<span class="g serif" style="font-size:17px">&sum;</span>'], '-',
@@ -1287,7 +1344,7 @@ if (window.Native) {
     if (e.target === ed && cur()) {
       const hit = issueAt(e.clientX, e.clientY);
       if (hit) return spellMenu(hit).then(items => [...items, null, ...Native.fieldItems(ed)]);
-      return [...Native.fieldItems(ed), null, item('bold'), item('italic'), item('strike'), item('code'), item('link'), null,
+      return [...Native.fieldItems(ed), null, item('bold'), item('italic'), item('strike'), item('code'), item('link'), item('imageFile'), null,
         item('table'), item('codeblock'), item('mathInline'), item('mathBlock'), item('diagram'), null, item('sendToAgent')];
     }
     const dg = e.target.closest('#paper .diagram');
